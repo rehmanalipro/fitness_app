@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'routes/app_routes.dart';
 
 void main() {
@@ -10,17 +11,15 @@ class FunFitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
 
       //  Initial screen (Splash)
       initialRoute: AppRoutes.splash,
 
-      //  Centralized static routes
-      routes: AppRoutes.routes,
-
-      //  For dynamic / future routes
-      onGenerateRoute: AppRoutes.onGenerateRoute,
+      //  Centralized routes
+      getPages: AppRoutes.pages,
+      unknownRoute: AppRoutes.unknownRoute,
 
       // App theme
       theme: ThemeData(

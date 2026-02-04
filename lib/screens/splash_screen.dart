@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Auto navigate after 3 seconds
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, AppRoutes.createAccount);
+      Get.offNamed(AppRoutes.createAccount);
     });
   }
 
@@ -28,7 +29,8 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         width: size.width,
         height: size.height,
-        color: const Color.fromARGB(255, 16, 5, 5),
+        color: const Color(0xFF000000),
+
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

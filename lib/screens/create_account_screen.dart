@@ -1,8 +1,9 @@
-import 'package:fitness_app/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:country_flags/country_flags.dart';
-import 'package:country_picker/country_picker.dart';
+import 'package:get/get.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../routes/app_routes.dart';
+import '../models/otp_purpose.dart';
+import '../widgets/responsive_page.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -19,33 +20,27 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  String selectedCountry = "Select Country";
-  String countryCode = "  ";
+  bool _obscurePassword = true;
   bool agreeTerms = false;
   final double socialRadius = 22;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
     final bool isDesktop = size.width > 600;
-    final double contentWidth = isDesktop ? 420 : size.width;
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: Container(
-              width: contentWidth,
-              padding: EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: isDesktop ? 32 : size.height * 0.04,
-              ),
-              child: Form(
-                key: _formKey, //  FORM ADDED
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        child: ResponsivePage(
+          padding: EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: isDesktop ? 32 : size.height * 0.04,
+          ),
+          child: Form(
+            key: _formKey, //  FORM ADDED
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                     Center(
                       child: Text(
                         "Create Your Account",
@@ -60,50 +55,27 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
                     _inputField("Full Name", nameController),
 
-                    _inputField(
-                      "Phone Number",
-                      phoneController,
-                      keyboard: TextInputType.phone,
-                    ),
-
-                    //  COUNTRY PICKER
-                    GestureDetector(
-                      onTap: () {
-                        showCountryPicker(
-                          context: context,
-                          showPhoneCode: false,
-                          onSelect: (Country country) {
-                            setState(() {
-                              selectedCountry = country.name;
-                              countryCode = country.countryCode;
-                            });
-                          },
-                        );
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: IntlPhoneField(
+                        controller: phoneController,
+                        initialCountryCode: "US",
+                        disableLengthCheck: true,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          hintText: "Phone Number",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            CountryFlag.fromCountryCode(countryCode),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                selectedCountry,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                            const Icon(Icons.arrow_drop_down),
-                          ],
-                        ),
+                        validator: (value) {
+                          if (value == null ||
+                              value.number.trim().isEmpty) {
+                            return "Phone Number is required";
+                          }
+                          return null;
+                        },
+                        onChanged: (phone) {},
                       ),
                     ),
 
@@ -151,17 +123,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           ),
                         ),
                         onPressed: () {
-                          // VALIDATION LOGIC
                           if (!_formKey.currentState!.validate()) return;
-
-                          if (selectedCountry == "Select Country") {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Please select a country"),
-                              ),
-                            );
-                            return;
-                          }
 
                           if (!agreeTerms) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -174,10 +136,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             return;
                           }
 
-                          //  ALL GOOD → NEXT SCREEN
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.success,
+                          Get.offNamed(
+                            AppRoutes.verification,
+                            arguments: OtpPurpose.signup,
                           );
                         },
                         child: const Text(
@@ -197,6 +158,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     ),
 
                     const SizedBox(height: 16),
+                    // SOCIAL ICONS
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -229,27 +191,20 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginScreen(),
-                              ),
-                            );
+                            Get.toNamed(AppRoutes.login);
                           },
                           child: Text(
                             'Login',
                             style: TextStyle(
                               fontSize: 14,
-                              color: const Color.fromARGB(255, 16, 5, 5),
+                              color: Color(0xFF000000),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ),
@@ -268,7 +223,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
-        obscureText: isPassword,
+        obscureText: isPassword ? _obscurePassword : false,
         keyboardType: keyboard,
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
@@ -288,11 +243,26 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         decoration: InputDecoration(
           hintText: hint,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                )
+              : null,
         ),
       ),
     );
   }
 
+  // social icon widget method
   Widget _socialIcon(IconData icon, Color color, {double radius = 22}) {
     return CircleAvatar(
       radius: radius,

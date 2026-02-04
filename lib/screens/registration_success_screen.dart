@@ -1,4 +1,6 @@
+/*
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 class RegistrationSuccessScreen extends StatelessWidget {
   const RegistrationSuccessScreen({super.key});
@@ -7,6 +9,7 @@ class RegistrationSuccessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final bool isDesktop = size.width > 600;
+    // registration success screen
 
     return Scaffold(
       body: SafeArea(
@@ -22,7 +25,7 @@ class RegistrationSuccessScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(24),
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFF1E3EBE),
+                    color: Color(0xFF000000),
                   ),
                   child: const Icon(Icons.check, color: Colors.white, size: 48),
                 ),
@@ -50,15 +53,18 @@ class RegistrationSuccessScreen extends StatelessWidget {
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E3EBE),
+                      backgroundColor: const Color(0xFF000000),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: () {
-                      // 🔜 NEXT SCREEN (change later)
-                      // Navigator.pushReplacementNamed(context, AppRoutes.home);
+                      Navigator.pushReplacementNamed(
+                        context,
+                        AppRoutes.onboardingReady,
+                      );
                     },
+
                     child: const Text(
                       "Continue",
                       style: TextStyle(fontSize: 16, color: Colors.white),
@@ -73,3 +79,4 @@ class RegistrationSuccessScreen extends StatelessWidget {
     );
   }
 }
+*/
