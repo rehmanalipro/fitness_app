@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../routes/app_routes.dart';
+import 'package:fitness_app/routes/app_routes.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,6 +12,7 @@ class HomeScreen extends StatelessWidget {
         final bool isWeb = constraints.maxWidth >= 900;
         final double maxContentWidth = isWeb ? 600 : double.infinity;
         final double headerHeight = isWeb ? 260 : 220;
+        final double bottomSafe = MediaQuery.of(context).padding.bottom;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
@@ -90,7 +91,7 @@ class HomeScreen extends StatelessWidget {
                                   ],
                                 ),
                               ],
-                            ),
+                            ), //
 
                             const SizedBox(height: 24),
 
@@ -212,7 +213,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ),
 
-                            const SizedBox(height: 120),
+                            SizedBox(height: 120 + bottomSafe + 24),
                           ],
                         ),
                       ),
@@ -237,32 +238,44 @@ class HomeScreen extends StatelessWidget {
             shape: const CircularNotchedRectangle(),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  const _NavItem(icon: Icons.home, label: "Home", active: true),
-                  _NavItem(
-                    icon: Icons.restaurant,
-                    label: "Food Log",
-                    onTap: () => Get.toNamed(AppRoutes.foodLog),
-                  ),
-                  _NavItem(
-                    icon: Icons.fitness_center,
-                    label: "Challenges",
-                    onTap: () => Get.toNamed(AppRoutes.challenges),
-                  ),
-                  const SizedBox(width: 40),
-                  _NavItem(
-                    icon: Icons.leaderboard,
-                    label: "Leaderboard",
-                    onTap: () => Get.toNamed(AppRoutes.leaderboard),
-                  ),
-                  _NavItem(
-                    icon: Icons.menu_book,
-                    label: "Guides",
-                    onTap: () => Get.toNamed(AppRoutes.guides),
-                  ),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    const _NavItem(
+                      icon: Icons.home,
+                      label: "Home",
+                      active: true,
+                    ),
+                    _NavItem(
+                      icon: Icons.restaurant,
+                      label: "Food Log",
+                      onTap: () => Get.toNamed(AppRoutes.foodLog),
+                    ),
+                    _NavItem(
+                      icon: Icons.fitness_center,
+                      label: "Challenges",
+                      onTap: () => Get.toNamed(AppRoutes.challenges),
+                    ),
+                    const SizedBox(width: 40),
+                    _NavItem(
+                      icon: Icons.leaderboard,
+                      label: "Leaderboard",
+                      onTap: () => Get.toNamed(AppRoutes.leaderboard),
+                    ),
+                    _NavItem(
+                      icon: Icons.menu_book,
+                      label: "Guides",
+                      onTap: () => Get.toNamed(AppRoutes.guides),
+                    ),
+                    _NavItem(
+                      icon: Icons.settings,
+                      label: "Settings",
+                      onTap: () => Get.toNamed(AppRoutes.settings),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -374,3 +387,4 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
+

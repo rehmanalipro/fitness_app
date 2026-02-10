@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../routes/app_routes.dart';
-import '../../widgets/primary_next_button.dart';
-import '../../widgets/responsive_page.dart';
-import '../../widgets/unit_toggle.dart';
+import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/core/widgets/primary_next_button.dart';
+import 'package:fitness_app/core/widgets/responsive_page.dart';
+import 'package:fitness_app/core/widgets/unit_toggle.dart';
 
 class WeightScreen extends StatefulWidget {
   const WeightScreen({super.key});
@@ -127,3 +127,6 @@ class _WeightScreenState extends State<WeightScreen> {
     );
   }
 }
+
+
+

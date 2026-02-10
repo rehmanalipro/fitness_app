@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import '../routes/app_routes.dart';
-import '../models/otp_purpose.dart';
-import '../widgets/responsive_page.dart';
+import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/core/constants/otp_purpose.dart';
+import 'package:fitness_app/core/widgets/responsive_page.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -274,3 +274,5 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 }
+
+

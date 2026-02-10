@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../routes/app_routes.dart';
-import '../../widgets/responsive_page.dart';
+import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/core/widgets/responsive_page.dart';
 
-class GenderScreen extends StatefulWidget {
-  const GenderScreen({super.key});
+class FitnessLevelScreen extends StatefulWidget {
+  const FitnessLevelScreen({super.key});
 
   @override
-  State<GenderScreen> createState() => _GenderScreenState();
+  State<FitnessLevelScreen> createState() => _FitnessLevelScreenState();
 }
 
-class _GenderScreenState extends State<GenderScreen> {
-  String? selectedGender;
+class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
+  String? selectedLevel;
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +20,8 @@ class _GenderScreenState extends State<GenderScreen> {
         leading: Padding(
           padding: const EdgeInsets.all(8),
           child: Container(
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 202, 216, 218),
+            decoration: const BoxDecoration(
+              color: Color.fromARGB(255, 202, 216, 218),
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -36,7 +36,6 @@ class _GenderScreenState extends State<GenderScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
       ),
-
       body: SafeArea(
         child: ResponsivePage(
           child: Column(
@@ -47,33 +46,50 @@ class _GenderScreenState extends State<GenderScreen> {
               // Screen title
               const Center(
                 child: Text(
-                  "What's your Gender?",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  "What's your fitness level?",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Male option
-              _genderButton(
-                title: "Male",
-                isSelected: selectedGender == "Male",
+              // Beginner
+              _levelButton(
+                title: "Begginer",
+                isSelected: selectedLevel == "Beginner",
                 onTap: () {
                   setState(() {
-                    selectedGender = "Male";
+                    selectedLevel = "Beginner";
                   });
                 },
               ),
 
               const SizedBox(height: 16),
 
-              // Female option
-              _genderButton(
-                title: "Female",
-                isSelected: selectedGender == "Female",
+              // Intermediate
+              _levelButton(
+                title: "Intermediate",
+                isSelected: selectedLevel == "Intermediate",
                 onTap: () {
                   setState(() {
-                    selectedGender = "Female";
+                    selectedLevel = "Intermediate";
+                  });
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Advanced
+              _levelButton(
+                title: "Advanced",
+                isSelected: selectedLevel == "Advanced",
+                onTap: () {
+                  setState(() {
+                    selectedLevel = "Advanced";
                   });
                 },
               ),
@@ -85,17 +101,16 @@ class _GenderScreenState extends State<GenderScreen> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedGender == null
-                        ? Colors.grey
-                        : Colors.black,
+                    backgroundColor:
+                        selectedLevel == null ? Colors.grey : Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: selectedGender == null
+                  onPressed: selectedLevel == null
                       ? null
                       : () {
-                          Get.toNamed(AppRoutes.goal);
+                          Get.toNamed(AppRoutes.age);
                         },
                   child: const Text(
                     "Next",
@@ -110,8 +125,8 @@ class _GenderScreenState extends State<GenderScreen> {
     );
   }
 
-  // Gender selection button
-  Widget _genderButton({
+  // Fitness level selection button
+  Widget _levelButton({
     required String title,
     required bool isSelected,
     required VoidCallback onTap,
@@ -144,3 +159,5 @@ class _GenderScreenState extends State<GenderScreen> {
     );
   }
 }
+
+

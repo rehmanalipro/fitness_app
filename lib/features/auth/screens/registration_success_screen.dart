@@ -1,6 +1,6 @@
 /*
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
+import 'package:fitness_app/routes/app_routes.dart';
 
 class RegistrationSuccessScreen extends StatelessWidget {
   const RegistrationSuccessScreen({super.key});
@@ -80,3 +80,4 @@ class RegistrationSuccessScreen extends StatelessWidget {
   }
 }
 */
+

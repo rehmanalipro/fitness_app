@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../screens/splash_screen.dart';
-import '../screens/create_account_screen.dart';
-import '../screens/login_screen.dart';
-import '../screens/forgot_password_screen.dart';
+import '../features/auth/screens/splash_screen.dart';
+import '../features/auth/screens/create_account_screen.dart';
+import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/forgot_password_screen.dart';
 
-import '../screens/verification_screen.dart';
-import '../screens/success_screen.dart';
+import '../features/auth/screens/verification_screen.dart';
+import '../features/auth/screens/success_screen.dart';
+import '../features/settings/screens/settings_screen.dart';
+import '../features/settings/screens/change_password_flow_screen.dart';
 
-import '../screens/onboarding/onboarding_start_screen.dart';
-import '../screens/onboarding/gender_screen.dart';
-import '../screens/onboarding/goal_screen.dart';
-import '../screens/onboarding/fitness_level_screen.dart';
-import '../screens/onboarding/age_screen.dart';
-import '../screens/onboarding/height_screen.dart';
-import '../screens/onboarding/weight_screen.dart';
-import '../models/home/home_screen.dart';
-import '../screens/placeholder_screen.dart';
+import '../features/auth/screens/onboarding/onboarding_start_screen.dart';
+import '../features/auth/screens/onboarding/gender_screen.dart';
+import '../features/auth/screens/onboarding/goal_screen.dart';
+import '../features/auth/screens/onboarding/fitness_level_screen.dart';
+import '../features/auth/screens/onboarding/age_screen.dart';
+import '../features/auth/screens/onboarding/height_screen.dart';
+import '../features/auth/screens/onboarding/weight_screen.dart';
+import '../features/home/screens/home_screen.dart';
+import 'package:fitness_app/core/widgets/placeholder_screen.dart';
 
-import '../models/otp_purpose.dart';
-import '../models/success_purpose.dart';
+import 'package:fitness_app/core/constants/otp_purpose.dart';
+import 'package:fitness_app/core/constants/success_purpose.dart';
 
 class AppRoutes {
   // base routes
@@ -47,6 +49,7 @@ class AppRoutes {
   static const String leaderboard = '/leaderboard';
   static const String guides = '/guides';
   static const String settings = '/settings';
+  static const String changePassword = '/change-password';
   static const String addAction = '/add';
 
   // GetX pages
@@ -79,10 +82,8 @@ class AppRoutes {
       name: guides,
       page: () => const PlaceholderScreen(title: "Guides"),
     ),
-    GetPage(
-      name: settings,
-      page: () => const PlaceholderScreen(title: "Settings"),
-    ),
+    GetPage(name: settings, page: () => const SettingsScreen()),
+    GetPage(name: changePassword, page: () => const ChangePasswordFlowScreen()),
     GetPage(
       name: addAction,
       page: () => const PlaceholderScreen(title: "Add"),
@@ -108,3 +109,5 @@ class AppRoutes {
     page: () => const Scaffold(body: Center(child: Text('Route not found'))),
   );
 }
+
+

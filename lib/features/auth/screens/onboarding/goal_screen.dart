@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../routes/app_routes.dart';
-import '../../widgets/responsive_page.dart';
+import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/core/widgets/responsive_page.dart';
 
 class GoalScreen extends StatefulWidget {
   const GoalScreen({super.key});
@@ -159,3 +159,5 @@ class _GoalScreenState extends State<GoalScreen> {
     );
   }
 }
+
+

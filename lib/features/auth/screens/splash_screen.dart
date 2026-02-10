@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../routes/app_routes.dart';
+import 'package:fitness_app/routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,3 +53,4 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
