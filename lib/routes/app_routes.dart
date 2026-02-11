@@ -19,6 +19,10 @@ import '../features/auth/screens/onboarding/age_screen.dart';
 import '../features/auth/screens/onboarding/height_screen.dart';
 import '../features/auth/screens/onboarding/weight_screen.dart';
 import '../features/home/screens/home_screen.dart';
+import '../features/home/screens/food_log_screen.dart';
+import '../features/home/screens/challenges_screen.dart';
+import '../features/home/screens/leaderboard_screen.dart';
+import '../features/home/screens/guides_screen.dart';
 import 'package:fitness_app/core/widgets/placeholder_screen.dart';
 
 import 'package:fitness_app/core/constants/otp_purpose.dart';
@@ -51,6 +55,7 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String changePassword = '/change-password';
   static const String addAction = '/add';
+  static const String notifications = '/notifications';
 
   // GetX pages
   static final List<GetPage<dynamic>> pages = [
@@ -66,27 +71,19 @@ class AppRoutes {
     GetPage(name: height, page: () => const HeightScreen()),
     GetPage(name: weight, page: () => const WeightScreen()),
     GetPage(name: home, page: () => const HomeScreen()),
-    GetPage(
-      name: foodLog,
-      page: () => const PlaceholderScreen(title: "Food Log"),
-    ),
-    GetPage(
-      name: challenges,
-      page: () => const PlaceholderScreen(title: "Challenges"),
-    ),
-    GetPage(
-      name: leaderboard,
-      page: () => const PlaceholderScreen(title: "Leaderboard"),
-    ),
-    GetPage(
-      name: guides,
-      page: () => const PlaceholderScreen(title: "Guides"),
-    ),
+    GetPage(name: foodLog, page: () => const FoodLogScreen()),
+    GetPage(name: challenges, page: () => const ChallengesScreen()),
+    GetPage(name: leaderboard, page: () => const LeaderboardScreen()),
+    GetPage(name: guides, page: () => const GuidesScreen()),
     GetPage(name: settings, page: () => const SettingsScreen()),
     GetPage(name: changePassword, page: () => const ChangePasswordFlowScreen()),
     GetPage(
       name: addAction,
       page: () => const PlaceholderScreen(title: "Add"),
+    ),
+    GetPage(
+      name: notifications,
+      page: () => const PlaceholderScreen(title: "Notifications"),
     ),
     GetPage(
       name: verification,

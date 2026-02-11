@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -8,18 +9,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Get.back(),
-        ),
-      ),
+    return MainLayout(
+      title: 'Settings',
+      showAppBar: true,
+      currentIndex: 5,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
