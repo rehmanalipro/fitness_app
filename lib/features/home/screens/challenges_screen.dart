@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fitness_app/core/widgets/fallback_network_image.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
 class ChallengesScreen extends StatelessWidget {
@@ -9,6 +10,7 @@ class ChallengesScreen extends StatelessWidget {
     return const MainLayout(
       title: 'Challenges',
       showAppBar: true,
+      showBackButton: true,
       currentIndex: 2,
       body: _ChallengesBody(),
     );
@@ -178,14 +180,12 @@ class _ChallengeCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipRRect(
+          FallbackNetworkImage(
+            imageUrl: imageUrl,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imageUrl,
-              width: 64,
-              height: 64,
-              fit: BoxFit.cover,
-            ),
           ),
           const SizedBox(width: 12),
           Expanded(

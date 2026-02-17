@@ -12,23 +12,76 @@ class SettingsScreen extends StatelessWidget {
     return MainLayout(
       title: 'Settings',
       showAppBar: true,
+      showBackButton: true,
       currentIndex: 5,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SettingsActionTile(
-                label: 'Change Password',
-                onTap: () => Get.toNamed(AppRoutes.changePassword),
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          color: Color(0xFFF1F1F1),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 23, top: 85),
+              child: SizedBox(
+                width: 345,
+                height: 519,
+                child: Column(
+                  children: [
+                    _SettingsActionTile(
+                      label: 'Profile Settings',
+                      trailingIcon: Icons.edit_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.profileSettings),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Subscription',
+                      trailingIcon: Icons.edit_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.subscription),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Change Fitness Level',
+                      trailingIcon: Icons.edit_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.changeFitnessLevel),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Help',
+                      onTap: () => Get.toNamed(AppRoutes.help),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Language Preferences',
+                      trailingIcon: Icons.edit_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.languagePreferences),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Change Theme',
+                      trailingIcon: Icons.edit_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.changeTheme),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Change Password',
+                      trailingIcon: Icons.edit_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.changePassword),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsActionTile(
+                      label: 'Logout',
+                      onTap: () => Get.offAllNamed(AppRoutes.login),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              _SettingsActionTile(
-                label: 'Logout',
-                onTap: () => Get.offAllNamed(AppRoutes.login),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -39,39 +92,46 @@ class SettingsScreen extends StatelessWidget {
 class _SettingsActionTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
+  final IconData? trailingIcon;
 
   const _SettingsActionTile({
     required this.label,
     required this.onTap,
+    this.trailingIcon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    return Material(
+      color: Colors.black,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white),
-          ],
+              Icon(
+                trailingIcon ?? Icons.chevron_right,
+                color: Colors.white,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-

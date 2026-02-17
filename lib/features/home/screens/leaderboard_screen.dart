@@ -9,6 +9,7 @@ class LeaderboardScreen extends StatelessWidget {
     return const MainLayout(
       title: 'Leaderboard',
       showAppBar: true,
+      showBackButton: true,
       currentIndex: 3,
       body: Center(
         child: Text(

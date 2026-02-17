@@ -38,6 +38,8 @@ dependencies:
   country_picker: ^2.0.25
   get: ^4.6.6
   image_picker: ^1.1.2
+  language_picker: ^0.4.5
+  adaptive_theme: ^3.7.2
 
 dev_dependencies:
   flutter_test:

@@ -10,6 +10,12 @@ import '../features/auth/screens/verification_screen.dart';
 import '../features/auth/screens/success_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/settings/screens/change_password_flow_screen.dart';
+import '../features/settings/screens/profile_setting.dart';
+import '../features/settings/screens/subscription.dart';
+import '../features/settings/screens/change_fitness_level.dart';
+import '../features/settings/help.dart';
+import '../features/settings/screens/language_prefrences.dart';
+import '../features/settings/screens/change_theme.dart';
 
 import '../features/auth/screens/onboarding/onboarding_start_screen.dart';
 import '../features/auth/screens/onboarding/gender_screen.dart';
@@ -53,6 +59,12 @@ class AppRoutes {
   static const String leaderboard = '/leaderboard';
   static const String guides = '/guides';
   static const String settings = '/settings';
+  static const String profileSettings = '/profile-settings';
+  static const String subscription = '/subscription';
+  static const String changeFitnessLevel = '/change-fitness-level';
+  static const String help = '/help';
+  static const String languagePreferences = '/language-preferences';
+  static const String changeTheme = '/change-theme';
   static const String changePassword = '/change-password';
   static const String addAction = '/add';
   static const String notifications = '/notifications';
@@ -76,6 +88,18 @@ class AppRoutes {
     GetPage(name: leaderboard, page: () => const LeaderboardScreen()),
     GetPage(name: guides, page: () => const GuidesScreen()),
     GetPage(name: settings, page: () => const SettingsScreen()),
+    GetPage(name: profileSettings, page: () => const ProfileSettingScreen()),
+    GetPage(name: subscription, page: () => const SubscriptionScreen()),
+    GetPage(
+      name: changeFitnessLevel,
+      page: () => const ChangeFitnessLevelScreen(),
+    ),
+    GetPage(name: help, page: () => const HelpScreen()),
+    GetPage(
+      name: languagePreferences,
+      page: () => const LanguagePreferencesScreen(),
+    ),
+    GetPage(name: changeTheme, page: () => const ChangeThemeScreen()),
     GetPage(name: changePassword, page: () => const ChangePasswordFlowScreen()),
     GetPage(
       name: addAction,
@@ -106,5 +130,3 @@ class AppRoutes {
     page: () => const Scaffold(body: Center(child: Text('Route not found'))),
   );
 }
-
-

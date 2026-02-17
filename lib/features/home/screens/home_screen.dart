@@ -1,9 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:fitness_app/core/widgets/fallback_network_image.dart';
+import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
@@ -16,8 +16,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ImagePicker _picker = ImagePicker();
-  Uint8List? _avatarBytes;
-  String _displayName = 'Mentisa Mayo';
+  final HomeProfileController _profileController = Get.put(
+    HomeProfileController(),
+    permanent: true,
+  );
 
   Future<void> _pickAvatar() async {
     final picked = await _picker.pickImage(
@@ -27,13 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (picked == null) return;
 
     final bytes = await picked.readAsBytes();
-    setState(() {
-      _avatarBytes = bytes;
-    });
+    _profileController.setAvatarBytes(bytes);
   }
 
   Future<void> _editName() async {
-    final controller = TextEditingController(text: _displayName);
+    final controller = TextEditingController(
+      text: _profileController.displayName.value,
+    );
     final newName = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -61,19 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (newName == null) return;
-    final trimmed = newName.trim();
-    if (trimmed.isEmpty) return;
-    setState(() {
-      _displayName = trimmed;
-    });
+    _profileController.setDisplayName(newName);
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomSafe = MediaQuery.of(context).padding.bottom;
-    final ImageProvider avatarProvider = _avatarBytes != null
-        ? MemoryImage(_avatarBytes!)
-        : const NetworkImage("https://i.pravatar.cc/150?img=47");
 
     return MainLayout(
       title: "Home",
@@ -112,12 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              _displayName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                            Obx(
+                              () => Text(
+                                _profileController.displayName.value,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -128,9 +125,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           InkWell(
                             onTap: _pickAvatar,
                             borderRadius: BorderRadius.circular(18),
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundImage: avatarProvider,
+                            child: Obx(
+                              () => CircleAvatar(
+                                radius: 18,
+                                backgroundImage: _profileController.avatarProvider,
+                                backgroundColor: const Color(0xFFEAEAEA),
+                                child: _profileController.avatarProvider == null
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 20,
+                                        color: Colors.black54,
+                                      )
+                                    : null,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -292,8 +299,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                           child: Stack(
                             children: [
-                              Image.network(
-                                "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg",
+                              const FallbackNetworkImage(
+                                imageUrl:
+                                    "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg",
                                 height: 170,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
@@ -365,7 +373,7 @@ class _ChallengeItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -373,14 +381,12 @@ class _ChallengeItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipRRect(
+          FallbackNetworkImage(
+            imageUrl: imageUrl,
+            width: 56,
+            height: 56,
+            fit: BoxFit.cover,
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imageUrl,
-              width: 56,
-              height: 56,
-              fit: BoxFit.cover,
-            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -397,10 +403,7 @@ class _ChallengeItem extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -418,10 +421,7 @@ class _ChallengeItem extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             duration,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black54,
-            ),
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
           ),
         ],
       ),

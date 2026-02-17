@@ -9,6 +9,7 @@ class FoodLogScreen extends StatelessWidget {
     return const MainLayout(
       title: 'Food Log',
       showAppBar: true,
+      showBackButton: true,
       currentIndex: 1,
       body: Center(
         child: Text(

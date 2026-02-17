@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
 class MainLayout extends StatelessWidget {
   final String title;
   final Widget body;
+  final bool isHome;
   final bool showAppBar;
+  final bool showBackButton;
+  final bool showAvatar;
   final int currentIndex;
   final bool constrainBody;
   final double contentMaxWidth;
@@ -15,7 +19,10 @@ class MainLayout extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
+    this.isHome = false,
     this.showAppBar = false,
+    this.showBackButton = false,
+    this.showAvatar = false,
     this.currentIndex = 0,
     this.constrainBody = true,
     this.contentMaxWidth = 520,
@@ -23,43 +30,209 @@ class MainLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = constrainBody
+    final bodyContent = constrainBody
         ? LayoutBuilder(
             builder: (context, constraints) {
               final maxWidth = constraints.maxWidth;
-              final width =
-                  maxWidth < contentMaxWidth ? maxWidth : contentMaxWidth;
+              final width = maxWidth < contentMaxWidth
+                  ? maxWidth
+                  : contentMaxWidth;
               return Align(
                 alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: width,
-                  child: body,
-                ),
+                child: SizedBox(width: width, child: body),
               );
             },
           )
         : body;
 
+    if (!showAppBar || isHome) {
+      return Scaffold(
+        body: SafeArea(top: false, bottom: false, child: bodyContent),
+        bottomNavigationBar: _BottomNavBar(currentIndex: currentIndex),
+      );
+    }
+
+    final screenSize = MediaQuery.of(context).size;
+    const headerHeight = 220.0;
+    final bodyTop = screenSize.height < 700 ? 120.0 : 127.0;
+    // Manually building header to allow avatar and back button in the same space without affecting title position
     return Scaffold(
-      appBar: showAppBar
-          ? AppBar(
-              title: Text(title),
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new),
-                onPressed: () => Get.back(),
-              ),
-            )
-          : null,
       body: SafeArea(
         top: false,
         bottom: false,
-        child: content,
+        child: Stack(
+          children: [
+            Container(
+              height: headerHeight,
+              width: double.infinity,
+              color: Colors.black,
+            ),
+            _ManualHeader(
+              title: title,
+              showBackButton: showBackButton,
+              showAvatar: _shouldShowAvatar(),
+            ),
+            Positioned.fill(
+              top: bodyTop,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: bodyContent,
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: _BottomNavBar(currentIndex: currentIndex),
+    );
+  }
+
+  bool _shouldShowAvatar() {
+    if (showBackButton) return false;
+    if (showAvatar) return true;
+    if (currentIndex == 3 || currentIndex == 4) return true;
+
+    final lowerTitle = title.toLowerCase();
+    return lowerTitle == 'foryou' ||
+        lowerTitle == 'for you' ||
+        lowerTitle == 'explore' ||
+        lowerTitle == 'chat';
+  }
+}
+
+class _ManualHeader extends StatelessWidget {
+  final String title;
+  final bool showBackButton;
+  final bool showAvatar;
+
+  const _ManualHeader({
+    required this.title,
+    required this.showBackButton,
+    required this.showAvatar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBack = showBackButton;
+    final hasAvatar = !hasBack && showAvatar;
+    final left = hasBack ? 22.0 : 26.0;
+    final top = hasBack ? 60.0 : 62.0;
+    final size = hasBack ? 32.0 : 28.0;
+    final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final titleFontSize = screenWidth < 360 ? 22.0 : 24.0;
+
+    return Stack(
+      children: [
+        if (hasBack)
+          Positioned(
+            top: top,
+            left: left,
+            width: size,
+            height: size,
+            child: const _HeaderBackButton(),
+          ),
+        if (hasAvatar)
+          Positioned(
+            top: top,
+            left: left,
+            width: size,
+            height: size,
+            child: _HeaderAvatar(size: size),
+          ),
+        Positioned.fill(
+          top: 62,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 72),
+            child: Center(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: titleFontSize,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeaderBackButton extends StatelessWidget {
+  const _HeaderBackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFE2E6E9),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Get.back(),
+        child: const Center(
+          child: Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: Color(0xFF70757A),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderAvatar extends StatelessWidget {
+  final double size;
+
+  const _HeaderAvatar({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (Get.isRegistered<HomeProfileController>()) {
+      final profileController = Get.find<HomeProfileController>();
+      return Obx(
+        () => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
+          ),
+          child: CircleAvatar(
+            radius: size / 2,
+            backgroundImage: profileController.avatarProvider,
+            backgroundColor: const Color(0xFFEAEAEA),
+            child: profileController.avatarProvider == null
+                ? const Icon(Icons.person, size: 14, color: Colors.black54)
+                : null,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
+      ),
+      child: const CircleAvatar(
+        radius: 14,
+        backgroundColor: Color(0xFFEAEAEA),
+        child: Icon(Icons.person, size: 14, color: Colors.black54),
+      ),
     );
   }
 }
@@ -95,8 +268,10 @@ class _BottomNavBar extends StatelessWidget {
             children: [
               Container(
                 height: barHeight + bottomInset,
-                padding:
-                    EdgeInsets.only(bottom: bottomInset, top: barTopPadding),
+                padding: EdgeInsets.only(
+                  bottom: bottomInset,
+                  top: barTopPadding,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
@@ -183,8 +358,7 @@ class _BottomNavBar extends StatelessWidget {
                 top: 0,
                 child: InkWell(
                   onTap: () => Get.toNamed(AppRoutes.addAction),
-                  borderRadius:
-                      BorderRadius.circular(centerButtonHeight / 2),
+                  borderRadius: BorderRadius.circular(centerButtonHeight / 2),
                   child: Container(
                     width: centerButtonWidth,
                     height: centerButtonHeight,
