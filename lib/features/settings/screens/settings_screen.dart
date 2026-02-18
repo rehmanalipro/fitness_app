@@ -27,7 +27,7 @@ class SettingsScreen extends StatelessWidget {
           top: false,
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.only(left: 23, top: 85),
+              padding: const EdgeInsets.only(left: 23, top: 40, right: 23),
               child: SizedBox(
                 width: 345,
                 height: 519,

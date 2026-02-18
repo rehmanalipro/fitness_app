@@ -1,3 +1,4 @@
+// ignore_for_file: unused_local_variable, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fitness_app/routes/app_routes.dart';
@@ -18,7 +19,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool rememberPassword = false;
-  final double socialRadius = 22;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  // ================= LOCAL LOGIN =================
+  void _loginUser() {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      setState(() => _loading = false);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login successful!")));
+
+      Get.offAllNamed(AppRoutes.home);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-
-                // TITLE
                 Center(
                   child: Text(
                     "Welcome Back",
@@ -46,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
                 _inputField(
@@ -84,6 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
 
                 const SizedBox(height: 24),
+
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -94,17 +117,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      if (!_formKey.currentState!.validate()) return;
-
-                      // Login successful logic (API later)
-                      Get.offNamed(AppRoutes.home);
-                    },
-
-                    child: const Text(
-                      "Continue",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                    onPressed: _loading ? null : _loginUser,
+                    child: _loading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                   ),
                 ),
 
@@ -126,21 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _socialIcon(
-                      Icons.g_mobiledata,
-                      Colors.red,
-                      radius: socialRadius,
-                    ),
-                    _socialIcon(
-                      Icons.facebook,
-                      Colors.blue,
-                      radius: socialRadius,
-                    ),
-                    _socialIcon(
-                      Icons.apple,
-                      Colors.purple,
-                      radius: socialRadius,
-                    ),
+                    _socialIcon(Icons.g_mobiledata, Colors.red),
+                    _socialIcon(Icons.facebook, Colors.blue),
+                    _socialIcon(Icons.apple, Colors.purple),
                   ],
                 ),
 
@@ -169,7 +176,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  //  INPUT FIELD WITH VALIDATION
   Widget _inputField(
     String hint,
     TextEditingController controller, {
@@ -202,9 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off
-                        : Icons.visibility,
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
                   ),
                   onPressed: () {
                     setState(() {
@@ -219,7 +223,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// social icon widget method
 Widget _socialIcon(IconData icon, Color color, {double radius = 22}) {
   return CircleAvatar(
     radius: radius,
@@ -230,5 +233,3 @@ Widget _socialIcon(IconData icon, Color color, {double radius = 22}) {
     ),
   );
 }
-
-

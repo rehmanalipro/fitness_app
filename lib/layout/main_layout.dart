@@ -71,6 +71,7 @@ class MainLayout extends StatelessWidget {
               title: title,
               showBackButton: showBackButton,
               showAvatar: _shouldShowAvatar(),
+              onBackTap: _handleBackTap,
             ),
             Positioned.fill(
               top: bodyTop,
@@ -103,17 +104,27 @@ class MainLayout extends StatelessWidget {
         lowerTitle == 'explore' ||
         lowerTitle == 'chat';
   }
+
+  void _handleBackTap() {
+    if (Get.key.currentState?.canPop() == true) {
+      Get.back();
+      return;
+    }
+    Get.offNamed(AppRoutes.home);
+  }
 }
 
 class _ManualHeader extends StatelessWidget {
   final String title;
   final bool showBackButton;
   final bool showAvatar;
+  final VoidCallback onBackTap;
 
   const _ManualHeader({
     required this.title,
     required this.showBackButton,
     required this.showAvatar,
+    required this.onBackTap,
   });
 
   @override
@@ -135,7 +146,7 @@ class _ManualHeader extends StatelessWidget {
             left: left,
             width: size,
             height: size,
-            child: const _HeaderBackButton(),
+            child: _HeaderBackButton(onTap: onBackTap),
           ),
         if (hasAvatar)
           Positioned(
@@ -145,21 +156,21 @@ class _ManualHeader extends StatelessWidget {
             height: size,
             child: _HeaderAvatar(size: size),
           ),
-        Positioned.fill(
-          top: 62,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 72),
-            child: Center(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: titleFontSize,
-                ),
+        Positioned(
+          top: 60,
+          left: 72,
+          right: 72,
+          height: 32,
+          child: Center(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: titleFontSize,
               ),
             ),
           ),
@@ -170,7 +181,9 @@ class _ManualHeader extends StatelessWidget {
 }
 
 class _HeaderBackButton extends StatelessWidget {
-  const _HeaderBackButton();
+  final VoidCallback onTap;
+
+  const _HeaderBackButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +192,7 @@ class _HeaderBackButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Get.back(),
+        onTap: onTap,
         child: const Center(
           child: Icon(
             Icons.arrow_back_ios_new,

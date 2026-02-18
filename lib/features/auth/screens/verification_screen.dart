@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-
 import 'package:fitness_app/core/constants/otp_purpose.dart';
 import 'package:fitness_app/core/constants/success_purpose.dart';
 import 'package:fitness_app/routes/app_routes.dart';
@@ -169,7 +168,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
               const SizedBox(height: 32),
 
-              // 🔹 Continue button
+              // 🔹Continue button
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -191,5 +190,3 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 }
-
-
