@@ -1,42 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:math' as math;
 
+import 'package:fitness_app/core/utils/app_responsive.dart';
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
 class MainLayout extends StatelessWidget {
   final String title;
   final Widget body;
+  final Widget? headerContent;
   final bool isHome;
   final bool showAppBar;
+  final bool showBottomNav;
   final bool showBackButton;
   final bool showAvatar;
   final int currentIndex;
   final bool constrainBody;
-  final double contentMaxWidth;
+  final double? contentMaxWidth;
+  final bool useScreenPadding;
 
   const MainLayout({
     super.key,
     required this.title,
     required this.body,
+    this.headerContent,
     this.isHome = false,
     this.showAppBar = false,
+    this.showBottomNav = true,
     this.showBackButton = false,
     this.showAvatar = false,
     this.currentIndex = 0,
     this.constrainBody = true,
-    this.contentMaxWidth = 520,
+    this.contentMaxWidth,
+    this.useScreenPadding = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final maxContentWidth =
+        contentMaxWidth ?? AppResponsive.contentMaxWidth(context);
+    final horizontalPadding = AppResponsive.screenPadding(context).left;
+
     final bodyContent = constrainBody
         ? LayoutBuilder(
             builder: (context, constraints) {
               final maxWidth = constraints.maxWidth;
-              final width = maxWidth < contentMaxWidth
+              final width = maxWidth < maxContentWidth
                   ? maxWidth
-                  : contentMaxWidth;
+                  : maxContentWidth;
               return Align(
                 alignment: Alignment.topCenter,
                 child: SizedBox(width: width, child: body),
@@ -45,10 +57,19 @@ class MainLayout extends StatelessWidget {
           )
         : body;
 
+    final paddedBody = useScreenPadding
+        ? Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: bodyContent,
+          )
+        : bodyContent;
+
     if (!showAppBar || isHome) {
       return Scaffold(
-        body: SafeArea(top: false, bottom: false, child: bodyContent),
-        bottomNavigationBar: _BottomNavBar(currentIndex: currentIndex),
+        body: SafeArea(top: false, bottom: false, child: paddedBody),
+        bottomNavigationBar: showBottomNav
+            ? _BottomNavBar(currentIndex: currentIndex)
+            : null,
       );
     }
 
@@ -69,6 +90,7 @@ class MainLayout extends StatelessWidget {
             ),
             _ManualHeader(
               title: title,
+              headerContent: headerContent,
               showBackButton: showBackButton,
               showAvatar: _shouldShowAvatar(),
               onBackTap: _handleBackTap,
@@ -83,13 +105,15 @@ class MainLayout extends StatelessWidget {
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: bodyContent,
+                child: paddedBody,
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNavBar(currentIndex: currentIndex),
+      bottomNavigationBar: showBottomNav
+          ? _BottomNavBar(currentIndex: currentIndex)
+          : null,
     );
   }
 
@@ -116,12 +140,14 @@ class MainLayout extends StatelessWidget {
 
 class _ManualHeader extends StatelessWidget {
   final String title;
+  final Widget? headerContent;
   final bool showBackButton;
   final bool showAvatar;
   final VoidCallback onBackTap;
 
   const _ManualHeader({
     required this.title,
+    required this.headerContent,
     required this.showBackButton,
     required this.showAvatar,
     required this.onBackTap,
@@ -156,25 +182,33 @@ class _ManualHeader extends StatelessWidget {
             height: size,
             child: _HeaderAvatar(size: size),
           ),
-        Positioned(
-          top: 60,
-          left: 72,
-          right: 72,
-          height: 32,
-          child: Center(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: titleFontSize,
+        if (headerContent != null)
+          Positioned(
+            top: 52,
+            left: showBackButton ? 72 : 26,
+            right: 22,
+            child: headerContent!,
+          )
+        else
+          Positioned(
+            top: 60,
+            left: 72,
+            right: 72,
+            height: 32,
+            child: Center(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: titleFontSize,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -222,13 +256,17 @@ class _HeaderAvatar extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
           ),
-          child: CircleAvatar(
-            radius: size / 2,
-            backgroundImage: profileController.avatarProvider,
-            backgroundColor: const Color(0xFFEAEAEA),
-            child: profileController.avatarProvider == null
-                ? const Icon(Icons.person, size: 14, color: Colors.black54)
-                : null,
+          child: InkWell(
+            onTap: () => Get.toNamed(AppRoutes.profile),
+            borderRadius: BorderRadius.circular(size / 2),
+            child: CircleAvatar(
+              radius: size / 2,
+              backgroundImage: profileController.avatarProvider,
+              backgroundColor: const Color(0xFFEAEAEA),
+              child: profileController.avatarProvider == null
+                  ? const Icon(Icons.person, size: 14, color: Colors.black54)
+                  : null,
+            ),
           ),
         ),
       );
@@ -241,10 +279,14 @@ class _HeaderAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: const Color(0xFFD9D9D9), width: 0.5),
       ),
-      child: const CircleAvatar(
-        radius: 14,
-        backgroundColor: Color(0xFFEAEAEA),
-        child: Icon(Icons.person, size: 14, color: Colors.black54),
+      child: InkWell(
+        onTap: () => Get.toNamed(AppRoutes.profile),
+        borderRadius: BorderRadius.circular(size / 2),
+        child: const CircleAvatar(
+          radius: 14,
+          backgroundColor: Color(0xFFEAEAEA),
+          child: Icon(Icons.person, size: 14, color: Colors.black54),
+        ),
       ),
     );
   }
@@ -257,7 +299,9 @@ class _BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final mediaPadding = MediaQuery.of(context).padding;
+    final bottomInset = mediaPadding.bottom;
+    final horizontalInset = mediaPadding.left + mediaPadding.right;
     const barHeight = 70.0;
     const barTopPadding = 8.0;
     const centerButtonWidth = 58.5;
@@ -268,126 +312,135 @@ class _BottomNavBar extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth;
+        final totalWidth = (constraints.maxWidth - horizontalInset).clamp(
+          0.0,
+          double.infinity,
+        );
         final available = totalWidth - centerButtonWidth;
-        final itemWidth = (available / 6).clamp(48.0, 80.0);
-        final iconSize = itemWidth >= 64 ? 26.0 : 24.0;
-        final labelFontSize = itemWidth >= 64 ? 12.0 : 10.0;
+        final itemWidth = math.max(48.0, available / 6);
+        final iconSize = itemWidth >= 72 ? 26.0 : 24.0;
+        final labelFontSize = itemWidth >= 72 ? 12.0 : 10.0;
 
-        return SizedBox(
-          height: barHeight + bottomInset,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Container(
-                height: barHeight + bottomInset,
-                padding: EdgeInsets.only(
-                  bottom: bottomInset,
-                  top: barTopPadding,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x11000000),
-                      blurRadius: 12,
-                      offset: Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    _NavItem(
-                      width: itemWidth,
-                      label: 'Home',
-                      icon: Icons.home,
-                      isActive: currentIndex == 0,
-                      onTap: () => _goTo(AppRoutes.home, 0),
-                      iconSize: iconSize,
-                      fontSize: labelFontSize,
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                    _NavItem(
-                      width: itemWidth,
-                      label: 'Food Log',
-                      icon: Icons.restaurant_menu,
-                      isActive: currentIndex == 1,
-                      onTap: () => _goTo(AppRoutes.foodLog, 1),
-                      iconSize: iconSize,
-                      fontSize: labelFontSize,
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                    _NavItem(
-                      width: itemWidth,
-                      label: 'Challenges',
-                      icon: Icons.fitness_center,
-                      isActive: currentIndex == 2,
-                      onTap: () => _goTo(AppRoutes.challenges, 2),
-                      iconSize: iconSize,
-                      fontSize: labelFontSize,
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                    SizedBox(width: centerButtonWidth),
-                    _NavItem(
-                      width: itemWidth,
-                      label: 'Leaderboard',
-                      icon: Icons.bar_chart,
-                      isActive: currentIndex == 3,
-                      onTap: () => _goTo(AppRoutes.leaderboard, 3),
-                      iconSize: iconSize,
-                      fontSize: labelFontSize,
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                    _NavItem(
-                      width: itemWidth,
-                      label: 'Guides',
-                      icon: Icons.menu_book,
-                      isActive: currentIndex == 4,
-                      onTap: () => _goTo(AppRoutes.guides, 4),
-                      iconSize: iconSize,
-                      fontSize: labelFontSize,
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                    _NavItem(
-                      width: itemWidth,
-                      label: 'Settings',
-                      icon: Icons.settings,
-                      isActive: currentIndex == 5,
-                      onTap: () => _goTo(AppRoutes.settings, 5),
-                      iconSize: iconSize,
-                      fontSize: labelFontSize,
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 0,
-                child: InkWell(
-                  onTap: () => Get.toNamed(AppRoutes.addAction),
-                  borderRadius: BorderRadius.circular(centerButtonHeight / 2),
-                  child: Container(
-                    width: centerButtonWidth,
-                    height: centerButtonHeight,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFE6E6E6),
-                        width: centerButtonBorder,
+        return Padding(
+          padding: EdgeInsets.only(
+            left: mediaPadding.left,
+            right: mediaPadding.right,
+          ),
+          child: SizedBox(
+            height: barHeight + bottomInset,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Container(
+                  height: barHeight + bottomInset,
+                  padding: EdgeInsets.only(
+                    bottom: bottomInset,
+                    top: barTopPadding,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x11000000),
+                        blurRadius: 12,
+                        offset: Offset(0, -4),
                       ),
-                    ),
-                    child: const Icon(Icons.add, size: 26),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      _NavItem(
+                        width: itemWidth,
+                        label: 'Home',
+                        icon: Icons.home,
+                        isActive: currentIndex == 0,
+                        onTap: () => _goTo(AppRoutes.home, 0),
+                        iconSize: iconSize,
+                        fontSize: labelFontSize,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                      ),
+                      _NavItem(
+                        width: itemWidth,
+                        label: 'Food Log',
+                        icon: Icons.restaurant_menu,
+                        isActive: currentIndex == 1,
+                        onTap: () => _goTo(AppRoutes.foodLog, 1),
+                        iconSize: iconSize,
+                        fontSize: labelFontSize,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                      ),
+                      _NavItem(
+                        width: itemWidth,
+                        label: 'Challenges',
+                        icon: Icons.fitness_center,
+                        isActive: currentIndex == 2,
+                        onTap: () => _goTo(AppRoutes.challenges, 2),
+                        iconSize: iconSize,
+                        fontSize: labelFontSize,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                      ),
+                      SizedBox(width: centerButtonWidth),
+                      _NavItem(
+                        width: itemWidth,
+                        label: 'Leaderboard',
+                        icon: Icons.bar_chart,
+                        isActive: currentIndex == 3,
+                        onTap: () => _goTo(AppRoutes.leaderboard, 3),
+                        iconSize: iconSize,
+                        fontSize: labelFontSize,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                      ),
+                      _NavItem(
+                        width: itemWidth,
+                        label: 'Guides',
+                        icon: Icons.menu_book,
+                        isActive: currentIndex == 4,
+                        onTap: () => _goTo(AppRoutes.guides, 4),
+                        iconSize: iconSize,
+                        fontSize: labelFontSize,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                      ),
+                      _NavItem(
+                        width: itemWidth,
+                        label: 'Settings',
+                        icon: Icons.settings,
+                        isActive: currentIndex == 5,
+                        onTap: () => _goTo(AppRoutes.settings, 5),
+                        iconSize: iconSize,
+                        fontSize: labelFontSize,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: 0,
+                  child: InkWell(
+                    onTap: () => Get.toNamed(AppRoutes.addAction),
+                    borderRadius: BorderRadius.circular(centerButtonHeight / 2),
+                    child: Container(
+                      width: centerButtonWidth,
+                      height: centerButtonHeight,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFE6E6E6),
+                          width: centerButtonBorder,
+                        ),
+                      ),
+                      child: const Icon(Icons.add, size: 26),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

@@ -41,6 +41,7 @@ dependencies:
   image_picker: ^1.1.2
   language_picker: ^0.4.5
   adaptive_theme: ^3.7.2
+  shared_preferences: ^2.5.3
   
 
 dev_dependencies:

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/primary_next_button.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
+import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class AgeScreen extends StatefulWidget {
   const AgeScreen({super.key});
@@ -12,9 +14,11 @@ class AgeScreen extends StatefulWidget {
 }
 
 class _AgeScreenState extends State<AgeScreen> {
+  final OnboardingService _onboardingService = OnboardingService();
   final List<int> years = List.generate(30, (i) => 1996 + i);
   late final FixedExtentScrollController _controller;
   int _selectedIndex = 10;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -26,6 +30,32 @@ class _AgeScreenState extends State<AgeScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveAndContinue() async {
+    if (_saving) return;
+
+    final selectedYear = years[_selectedIndex];
+    final currentYear = DateTime.now().year;
+    final selectedAge = (currentYear - selectedYear).clamp(1, 120);
+
+    setState(() => _saving = true);
+    OnboardingData.instance.birthYear = selectedYear;
+    OnboardingData.instance.age = selectedAge;
+
+    final result = await _onboardingService.saveStep(
+      step: 'age',
+      data: OnboardingData.instance.toMap(),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.success) {
+      Get.toNamed(AppRoutes.height);
+    }
   }
 
   @override
@@ -80,8 +110,9 @@ class _AgeScreenState extends State<AgeScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: isSelected ? 18 : 16,
-                              fontWeight:
-                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               color: isSelected
                                   ? Colors.black
                                   : Colors.grey.shade600,
@@ -95,7 +126,8 @@ class _AgeScreenState extends State<AgeScreen> {
               ),
               const SizedBox(height: 24),
               PrimaryNextButton(
-                onPressed: () => Get.toNamed(AppRoutes.height),
+                onPressed: _saving ? null : _saveAndContinue,
+                label: _saving ? 'Saving...' : 'Next',
               ),
             ],
           ),
@@ -104,6 +136,3 @@ class _AgeScreenState extends State<AgeScreen> {
     );
   }
 }
-
-
-

@@ -1,7 +1,9 @@
 // ignore_for_file: unused_local_variable, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/core/widgets/loading_dots_text.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -12,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -29,20 +32,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ================= LOCAL LOGIN =================
-  void _loginUser() {
+  Future<void> _loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
+    final result = await _authService.login(
+      email: emailController.text,
+      password: passwordController.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
 
-    Future.delayed(const Duration(milliseconds: 800), () {
-      setState(() => _loading = false);
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Login successful!")));
-
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.success) {
       Get.offAllNamed(AppRoutes.home);
-    });
+    }
   }
 
   @override
@@ -113,13 +119,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
+                      disabledBackgroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: _loading ? null : _loginUser,
                     child: _loading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const LoadingDotsText(
+                            label: "Signing in",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          )
                         : const Text(
                             "Continue",
                             style: TextStyle(color: Colors.white, fontSize: 16),

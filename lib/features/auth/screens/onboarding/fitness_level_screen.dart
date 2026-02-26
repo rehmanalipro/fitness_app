@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
+import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class FitnessLevelScreen extends StatefulWidget {
   const FitnessLevelScreen({super.key});
@@ -11,7 +13,30 @@ class FitnessLevelScreen extends StatefulWidget {
 }
 
 class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
+  final OnboardingService _onboardingService = OnboardingService();
   String? selectedLevel;
+  bool _saving = false;
+
+  Future<void> _saveAndContinue() async {
+    if (selectedLevel == null || _saving) return;
+
+    setState(() => _saving = true);
+    OnboardingData.instance.fitnessLevel = selectedLevel;
+
+    final result = await _onboardingService.saveStep(
+      step: 'fitness-level',
+      data: OnboardingData.instance.toMap(),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.success) {
+      Get.toNamed(AppRoutes.age);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,21 +126,31 @@ class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        selectedLevel == null ? Colors.grey : Colors.black,
+                    backgroundColor: selectedLevel == null
+                        ? Colors.grey
+                        : Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: selectedLevel == null
+                  onPressed: selectedLevel == null || _saving
                       ? null
-                      : () {
-                          Get.toNamed(AppRoutes.age);
-                        },
-                  child: const Text(
-                    "Next",
-                    style: TextStyle(color: Colors.white),
-                  ),
+                      : _saveAndContinue,
+                  child: _saving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          "Next",
+                          style: TextStyle(color: Colors.white),
+                        ),
                 ),
               ),
             ],
@@ -159,5 +194,3 @@ class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
     );
   }
 }
-
-

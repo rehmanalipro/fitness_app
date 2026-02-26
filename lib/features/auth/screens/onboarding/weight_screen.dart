@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/primary_next_button.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 import 'package:fitness_app/core/widgets/unit_toggle.dart';
+import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class WeightScreen extends StatefulWidget {
   const WeightScreen({super.key});
@@ -13,8 +15,10 @@ class WeightScreen extends StatefulWidget {
 }
 
 class _WeightScreenState extends State<WeightScreen> {
+  final OnboardingService _onboardingService = OnboardingService();
   bool _isKg = true;
   int _selectedIndex = 20;
+  bool _saving = false;
 
   late final FixedExtentScrollController _controller;
 
@@ -31,6 +35,33 @@ class _WeightScreenState extends State<WeightScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveAndContinue() async {
+    if (_saving) return;
+
+    final weightValue = _isKg
+        ? _kgValues[_selectedIndex].toDouble()
+        : _lbValues[_selectedIndex].toDouble();
+    final unit = _isKg ? 'kg' : 'lb';
+
+    setState(() => _saving = true);
+    OnboardingData.instance.weightValue = weightValue;
+    OnboardingData.instance.weightUnit = unit;
+
+    final result = await _onboardingService.saveStep(
+      step: 'weight',
+      data: OnboardingData.instance.toMap(),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.success) {
+      Get.toNamed(AppRoutes.login);
+    }
   }
 
   @override
@@ -66,8 +97,7 @@ class _WeightScreenState extends State<WeightScreen> {
                 onChanged: (leftSelected) {
                   setState(() {
                     _isKg = leftSelected;
-                    _selectedIndex =
-                        _selectedIndex.clamp(0, values.length - 1);
+                    _selectedIndex = _selectedIndex.clamp(0, values.length - 1);
                     _controller.jumpToItem(_selectedIndex);
                   });
                 },
@@ -103,8 +133,9 @@ class _WeightScreenState extends State<WeightScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: isSelected ? 18 : 16,
-                              fontWeight:
-                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               color: isSelected
                                   ? Colors.black
                                   : Colors.grey.shade600,
@@ -118,7 +149,8 @@ class _WeightScreenState extends State<WeightScreen> {
               ),
               const SizedBox(height: 24),
               PrimaryNextButton(
-                onPressed: () => Get.toNamed(AppRoutes.login),
+                onPressed: _saving ? null : _saveAndContinue,
+                label: _saving ? 'Saving...' : 'Next',
               ),
             ],
           ),
@@ -127,6 +159,3 @@ class _WeightScreenState extends State<WeightScreen> {
     );
   }
 }
-
-
-

@@ -12,6 +12,7 @@ import '../features/settings/screens/settings_screen.dart';
 import '../features/settings/screens/change_password_flow_screen.dart';
 import '../features/settings/screens/profile_setting.dart';
 import '../features/settings/screens/subscription.dart';
+import '../features/settings/screens/subscription_options_screen.dart';
 import '../features/settings/screens/change_fitness_level.dart';
 import '../features/settings/help.dart';
 import '../features/settings/screens/language_prefrences.dart';
@@ -27,9 +28,15 @@ import '../features/auth/screens/onboarding/weight_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/screens/food_log_screen.dart';
 import '../features/home/screens/challenges_screen.dart';
+import '../features/home/screens/challenges_feed_screen.dart';
 import '../features/home/screens/leaderboard_screen.dart';
 import '../features/home/screens/guides_screen.dart';
-import 'package:fitness_app/core/widgets/placeholder_screen.dart';
+import '../features/home/screens/invite_friend_screen.dart';
+import '../features/home/screens/notifications_screen.dart';
+import '../features/home/screens/profile_screen.dart';
+import '../features/home/screens/add_media_screen.dart';
+import '../features/home/screens/add_challenge_post_screen.dart';
+import '../features/home/screens/challenge_post_detail_screen.dart';
 
 import 'package:fitness_app/core/constants/otp_purpose.dart';
 import 'package:fitness_app/core/constants/success_purpose.dart';
@@ -56,11 +63,15 @@ class AppRoutes {
   static const String home = '/home';
   static const String foodLog = '/food-log';
   static const String challenges = '/challenges';
+  static const String chatChallenges = '/chat-challenges';
+  static const String addChallengePost = '/add-challenge-post';
+  static const String challengePostDetail = '/challenge-post-detail';
   static const String leaderboard = '/leaderboard';
   static const String guides = '/guides';
   static const String settings = '/settings';
   static const String profileSettings = '/profile-settings';
   static const String subscription = '/subscription';
+  static const String subscriptionOptions = '/subscription-options';
   static const String changeFitnessLevel = '/change-fitness-level';
   static const String help = '/help';
   static const String languagePreferences = '/language-preferences';
@@ -68,6 +79,8 @@ class AppRoutes {
   static const String changePassword = '/change-password';
   static const String addAction = '/add';
   static const String notifications = '/notifications';
+  static const String inviteFriend = '/invite-friend';
+  static const String profile = '/profile';
 
   // GetX pages
   static final List<GetPage<dynamic>> pages = [
@@ -84,12 +97,24 @@ class AppRoutes {
     GetPage(name: weight, page: () => const WeightScreen()),
     GetPage(name: home, page: () => const HomeScreen()),
     GetPage(name: foodLog, page: () => const FoodLogScreen()),
-    GetPage(name: challenges, page: () => const ChallengesScreen()),
+    GetPage(name: challenges, page: () => const ChallengesFeedScreen()),
+    GetPage(name: chatChallenges, page: () => const ChallengesScreen()),
+    GetPage(name: addChallengePost, page: () => const AddChallengePostScreen()),
+    GetPage(
+      name: challengePostDetail,
+      page: () => const ChallengePostDetailScreen(),
+    ),
     GetPage(name: leaderboard, page: () => const LeaderboardScreen()),
     GetPage(name: guides, page: () => const GuidesScreen()),
+    GetPage(name: inviteFriend, page: () => const InviteFriendScreen()),
+    GetPage(name: profile, page: () => const ProfileScreen()),
     GetPage(name: settings, page: () => const SettingsScreen()),
     GetPage(name: profileSettings, page: () => const ProfileSettingScreen()),
     GetPage(name: subscription, page: () => const SubscriptionScreen()),
+    GetPage(
+      name: subscriptionOptions,
+      page: () => const SubscriptionOptionsScreen(),
+    ),
     GetPage(
       name: changeFitnessLevel,
       page: () => const ChangeFitnessLevelScreen(),
@@ -101,19 +126,21 @@ class AppRoutes {
     ),
     GetPage(name: changeTheme, page: () => const ChangeThemeScreen()),
     GetPage(name: changePassword, page: () => const ChangePasswordFlowScreen()),
-    GetPage(
-      name: addAction,
-      page: () => const PlaceholderScreen(title: "Add"),
-    ),
-    GetPage(
-      name: notifications,
-      page: () => const PlaceholderScreen(title: "Notifications"),
-    ),
+    GetPage(name: addAction, page: () => const AddMediaScreen()),
+    GetPage(name: notifications, page: () => const NotificationsScreen()),
     GetPage(
       name: verification,
       page: () {
-        final purpose = Get.arguments as OtpPurpose;
-        return VerificationScreen(purpose: purpose);
+        final args = Get.arguments;
+        if (args is Map<String, dynamic>) {
+          return VerificationScreen(
+            purpose: args['purpose'] as OtpPurpose,
+            email: args['email'] as String?,
+            expectedOtp: args['expectedOtp']?.toString(),
+          );
+        }
+
+        return VerificationScreen(purpose: args as OtpPurpose);
       },
     ),
     GetPage(

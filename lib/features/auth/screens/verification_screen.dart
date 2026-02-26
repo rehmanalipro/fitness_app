@@ -1,41 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+
 import 'package:fitness_app/core/constants/otp_purpose.dart';
 import 'package:fitness_app/core/constants/success_purpose.dart';
-import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
+import 'package:fitness_app/routes/app_routes.dart';
 
 class VerificationScreen extends StatefulWidget {
   final OtpPurpose purpose;
+  final String? email;
+  final String? expectedOtp;
 
-  const VerificationScreen({super.key, required this.purpose});
+  const VerificationScreen({
+    super.key,
+    required this.purpose,
+    this.email,
+    this.expectedOtp,
+  });
 
-  // 🔹 Dynamic title
   String get title {
     switch (purpose) {
       case OtpPurpose.signup:
-        return "Verify Your Account";
+        return 'Verify Your Account';
       case OtpPurpose.login:
-        return "Login Verification";
+        return 'Login Verification';
       case OtpPurpose.forgotPassword:
-        return "Reset Password";
+        return 'Reset Password';
       case OtpPurpose.changePassword:
-        return "Verification Code";
+        return 'Verification Code';
     }
   }
 
-  // 🔹 Dynamic description
   String get description {
     switch (purpose) {
       case OtpPurpose.signup:
-        return "Enter the code sent to your email to complete signup";
+        return 'Enter the code sent to your email to complete signup';
       case OtpPurpose.login:
-        return "Enter the code sent to login securely";
+        return 'Enter the code sent to login securely';
       case OtpPurpose.forgotPassword:
-        return "Enter the code to reset your password";
+        return 'Enter the code to reset your password';
       case OtpPurpose.changePassword:
-        return "We have sent the verification code to your email address";
+        return 'We have sent the verification code to your email address';
     }
   }
 
@@ -48,7 +54,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     4,
     (_) => TextEditingController(),
   );
-
   final List<FocusNode> focusNodes = List.generate(4, (_) => FocusNode());
 
   @override
@@ -62,13 +67,37 @@ class _VerificationScreenState extends State<VerificationScreen> {
     super.dispose();
   }
 
-  // 🔹 Centralized navigation logic
-  void _handleContinue() {
+  String get _otp => controllers.map((c) => c.text).join();
+
+  Future<void> _handleContinue() async {
+    final otp = _otp;
+    if (otp.length != 4 || otp.contains(RegExp(r'[^0-9]'))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 4-digit OTP')),
+      );
+      return;
+    }
+
+    if (widget.purpose == OtpPurpose.forgotPassword) {
+      final expectedOtp = widget.expectedOtp?.trim() ?? '';
+      if (expectedOtp.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP not available. Request again.')),
+        );
+        return;
+      }
+      if (otp != expectedOtp) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Invalid OTP')));
+        return;
+      }
+    }
+
     switch (widget.purpose) {
       case OtpPurpose.signup:
         Get.offNamed(AppRoutes.success, arguments: SuccessPurpose.registration);
         break;
-
       case OtpPurpose.forgotPassword:
       case OtpPurpose.changePassword:
         Get.offNamed(
@@ -76,9 +105,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
           arguments: SuccessPurpose.passwordUpdated,
         );
         break;
-
       case OtpPurpose.login:
-        Get.offNamed(AppRoutes.login);
+        Get.offNamed(AppRoutes.home);
         break;
     }
   }
@@ -93,7 +121,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
           child: Column(
             children: [
               const SizedBox(height: 8),
-
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
@@ -101,10 +128,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   onPressed: () => Get.back(),
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // 🔹 Title
               Text(
                 widget.title,
                 style: const TextStyle(
@@ -113,19 +137,13 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 12),
-
-              // 🔹 Description
               Text(
                 widget.description,
                 style: const TextStyle(color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 32),
-
-              // 🔹 OTP boxes
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 12,
@@ -156,7 +174,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         }
                       },
                       decoration: InputDecoration(
-                        counterText: "",
+                        counterText: '',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -165,10 +183,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   );
                 }),
               ),
-
               const SizedBox(height: 32),
-
-              // 🔹Continue button
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -178,7 +193,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   ),
                   onPressed: _handleContinue,
                   child: const Text(
-                    "Continue",
+                    'Continue',
                     style: TextStyle(color: Colors.white),
                   ),
                 ),

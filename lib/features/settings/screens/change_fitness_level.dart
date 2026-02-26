@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-import 'package:fitness_app/core/widgets/app_back_appbar.dart';
+import 'package:fitness_app/layout/main_layout.dart';
 
 class ChangeFitnessLevelScreen extends StatefulWidget {
   const ChangeFitnessLevelScreen({super.key});
@@ -15,8 +16,12 @@ class _ChangeFitnessLevelScreenState extends State<ChangeFitnessLevelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppBackAppBar(title: 'Change Fitness Level'),
+    return MainLayout(
+      title: 'Change Fitness Level',
+      showAppBar: true,
+      showBackButton: true,
+      showBottomNav: false,
+      currentIndex: 5,
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -38,7 +43,7 @@ class _ChangeFitnessLevelScreenState extends State<ChangeFitnessLevelScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Get.back(),
                 child: const Text(
                   'Save',
                   style: TextStyle(color: Colors.white),

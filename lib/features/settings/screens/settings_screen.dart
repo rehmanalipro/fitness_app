@@ -1,11 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  static final AuthService _authService = AuthService();
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('No'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Yes', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true) {
+      await _authService.logout();
+      Get.offAllNamed(AppRoutes.login);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +107,7 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 14),
                     _SettingsActionTile(
                       label: 'Logout',
-                      onTap: () => Get.offAllNamed(AppRoutes.login),
+                      onTap: () => _confirmLogout(context),
                     ),
                   ],
                 ),
@@ -108,27 +139,29 @@ class _SettingsActionTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
-        child: Container(
+        child: SizedBox(
           height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                trailingIcon ?? Icons.chevron_right,
-                color: Colors.white,
-                size: 20,
-              ),
-            ],
+                Icon(
+                  trailingIcon ?? Icons.chevron_right,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),

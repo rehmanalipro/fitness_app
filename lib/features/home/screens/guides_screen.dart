@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,6 +7,7 @@ import 'package:fitness_app/core/widgets/fallback_network_image.dart';
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/features/home/widgets/guides/explore_group_chat_panel.dart';
 
 class GuidesScreen extends StatefulWidget {
   const GuidesScreen({super.key});
@@ -101,7 +102,13 @@ class _GuidesScreenState extends State<GuidesScreen> {
   Widget build(BuildContext context) {
     return MainLayout(
       title: 'Guides',
+      headerContent: _topTabIndex == 1
+          ? ExploreChatHeaderInfo(
+              onInviteTap: () => Get.toNamed(AppRoutes.inviteFriend),
+            )
+          : null,
       showAppBar: true,
+      showBottomNav: _topTabIndex != 1,
       showBackButton: true,
       currentIndex: 4,
       constrainBody: false,
@@ -148,6 +155,8 @@ class _GuidesScreenState extends State<GuidesScreen> {
                       const SizedBox(height: 12),
                       if (_topTabIndex == 0)
                         _ForYouSection(sidePadding: sidePadding)
+                      else if (_topTabIndex == 1)
+                        const ExploreGroupChatPanel()
                       else if (_topTabIndex == 2)
                         _ChatSection(
                           sidePadding: sidePadding,
@@ -162,7 +171,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
                             setState(() {
                               _chatFilterIndex = 1;
                             });
-                            Get.toNamed(AppRoutes.challenges);
+                            Get.toNamed(AppRoutes.chatChallenges);
                           },
                           profileController: _profileController,
                           posts: _foodPosts,

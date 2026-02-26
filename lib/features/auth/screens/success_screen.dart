@@ -34,7 +34,7 @@ class SuccessScreen extends StatelessWidget {
       case SuccessPurpose.registration:
         return AppRoutes.onboardingReady;
       case SuccessPurpose.passwordUpdated:
-        return AppRoutes.home;
+        return AppRoutes.login;
     }
   }
 
@@ -71,7 +71,7 @@ class SuccessScreen extends StatelessWidget {
                   ),
                   child: Text(
                     purpose == SuccessPurpose.passwordUpdated
-                        ? "Back to Home"
+                        ? "Back to Login"
                         : "Continue",
                     style: const TextStyle(color: Colors.white),
                   ),

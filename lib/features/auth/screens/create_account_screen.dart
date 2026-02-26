@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:fitness_app/core/constants/otp_purpose.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
+import 'package:fitness_app/core/constants/otp_purpose.dart';
+import 'package:fitness_app/core/widgets/loading_dots_text.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -13,6 +15,7 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
+  final AuthService _authService = AuthService();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -34,7 +37,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   // ================= REGISTER (LOCAL ONLY) =================
-  void _registerUser() {
+  Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (!agreeTerms) {
@@ -44,7 +47,22 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       return;
     }
 
-    Get.offNamed(AppRoutes.verification, arguments: OtpPurpose.signup);
+    setState(() => _loading = true);
+    final result = await _authService.register(
+      name: nameController.text,
+      email: emailController.text,
+      password: passwordController.text,
+      phone: phoneController.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.success) {
+      Get.offNamed(AppRoutes.verification, arguments: OtpPurpose.signup);
+    }
   }
 
   @override
@@ -123,33 +141,40 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
                   const SizedBox(height: 20),
 
-                  _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                16,
-                                5,
-                                5,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 16, 5, 5),
+                        disabledBackgroundColor: const Color.fromARGB(
+                          255,
+                          16,
+                          5,
+                          5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _loading ? null : _registerUser,
+                      child: _loading
+                          ? const LoadingDotsText(
+                              label: "Creating account",
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.white,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: _registerUser,
-                            child: Text(
+                            )
+                          : const Text(
                               "Sign Up",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 color: Colors.white,
                               ),
                             ),
-                          ),
-                        ),
+                    ),
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -252,7 +277,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   Widget _socialIcon(IconData icon, Color color, {double radius = 22}) {
     return CircleAvatar(
       radius: radius,
-      backgroundColor: color.withOpacity(0.1),
+      backgroundColor: color.withValues(alpha: 0.1),
       child: IconButton(
         icon: Icon(icon, color: color, size: radius),
         onPressed: () {},

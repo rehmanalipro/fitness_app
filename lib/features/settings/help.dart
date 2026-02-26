@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:fitness_app/core/widgets/app_back_appbar.dart';
+import 'package:fitness_app/layout/main_layout.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -30,8 +30,12 @@ class HelpScreen extends StatelessWidget {
       ),
     ];
 
-    return Scaffold(
-      appBar: const AppBackAppBar(title: 'Help'),
+    return MainLayout(
+      title: 'Help',
+      showAppBar: true,
+      showBackButton: true,
+      showBottomNav: false,
+      currentIndex: 5,
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

@@ -1,6 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'package:fitness_app/core/widgets/fallback_network_image.dart';
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
@@ -15,22 +16,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ImagePicker _picker = ImagePicker();
   final HomeProfileController _profileController = Get.put(
     HomeProfileController(),
     permanent: true,
   );
-
-  Future<void> _pickAvatar() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
-
-    final bytes = await picked.readAsBytes();
-    _profileController.setAvatarBytes(bytes);
-  }
 
   Future<void> _editName() async {
     final controller = TextEditingController(
@@ -68,278 +57,295 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).padding.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final screenSize = mediaQuery.size;
+    final bottomSafe = mediaQuery.padding.bottom;
+    final topSafe = mediaQuery.padding.top;
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final maxContentWidth = isLandscape ? 860.0 : 390.0;
+    final sidePadding = isLandscape ? 16.0 : 20.0;
+    final panelTop = isLandscape ? 96.0 : 125.0;
 
     return MainLayout(
       title: "Home",
       currentIndex: 0,
       constrainBody: false,
+      useScreenPadding: false,
       body: Stack(
         children: [
-          // BLACK HEADER
-          Container(height: 220, width: double.infinity, color: Colors.black),
-
-          // CONTENT (SCROLLABLE)
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 30),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-
-                  // HEADER
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: _editName,
-                        behavior: HitTestBehavior.opaque,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Welcome",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
+          Container(color: Colors.black),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: math.min(maxContentWidth, screenSize.width),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: sidePadding),
+                child: Column(
+                  children: [
+                    SizedBox(height: topSafe + 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: _editName,
+                          behavior: HitTestBehavior.opaque,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Welcome",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Obx(
-                              () => Text(
-                                _profileController.displayName.value,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                              const SizedBox(height: 6),
+                              Obx(
+                                () => Text(
+                                  _profileController.displayName.value,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 33,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            InkWell(
+                              onTap: () => Get.toNamed(AppRoutes.profile),
+                              borderRadius: BorderRadius.circular(18),
+                              child: Obx(
+                                () => CircleAvatar(
+                                  radius: 18,
+                                  backgroundImage:
+                                      _profileController.avatarProvider,
+                                  backgroundColor: const Color(0xFFEAEAEA),
+                                  child:
+                                      _profileController.avatarProvider == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 20,
+                                          color: Colors.black54,
+                                        )
+                                      : null,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          InkWell(
-                            onTap: _pickAvatar,
-                            borderRadius: BorderRadius.circular(18),
-                            child: Obx(
-                              () => CircleAvatar(
-                                radius: 18,
-                                backgroundImage: _profileController.avatarProvider,
-                                backgroundColor: const Color(0xFFEAEAEA),
-                                child: _profileController.avatarProvider == null
-                                    ? const Icon(
-                                        Icons.person,
-                                        size: 20,
-                                        color: Colors.black54,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          InkWell(
-                            onTap: () => Get.toNamed(AppRoutes.notifications),
-                            child: Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                            const SizedBox(width: 10),
+                            InkWell(
+                              onTap: () => Get.toNamed(AppRoutes.notifications),
                               child: const Icon(
                                 Icons.notifications_none,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // MAIN CARD
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // SELECT CATEGORY (CLICKABLE)
-                        InkWell(
-                          onTap: () {
-                            // TODO: open category modal
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: const [
-                                Text("Select Category"),
-                                Icon(Icons.keyboard_arrow_down),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // START RANDOM CHALLENGE (CENTER)
-                        Center(
-                          child: SizedBox(
-                            width: 260,
-                            height: 44,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () =>
-                                  Get.toNamed(AppRoutes.challenges),
-                              child: const Text(
-                                "Start Random Challenge",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        const Text(
-                          "Current Challenges",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // SCROLLABLE CHALLENGES ONLY
-                        SizedBox(
-                          height: 200,
-                          child: ListView(
-                            physics: const BouncingScrollPhysics(),
-                            children: const [
-                              _ChallengeItem(
-                                title: "Push Up",
-                                subtitle: "100 Push up a day",
-                                duration: "5:00 min",
-                                progress: 0.42,
-                                imageUrl:
-                                    "https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg",
-                              ),
-                              SizedBox(height: 12),
-                              _ChallengeItem(
-                                title: "Sit Up",
-                                subtitle: "20 Sit up a day",
-                                duration: "5:00 min",
-                                progress: 0.78,
-                                imageUrl:
-                                    "https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg",
-                              ),
-                              SizedBox(height: 12),
-                              _ChallengeItem(
-                                title: "Knee Push Up",
-                                subtitle: "20 reps",
-                                duration: "5:00 min",
-                                progress: 0.35,
-                                imageUrl:
-                                    "https://images.pexels.com/photos/414029/pexels-photo-414029.jpeg",
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // RECOMMENDED MEAL
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            Text(
-                              "Recommended Meal",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              "View all",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                                size: 22,
+                                color: Colors.white,
                               ),
                             ),
                           ],
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Stack(
-                            children: [
-                              const FallbackNetworkImage(
-                                imageUrl:
-                                    "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg",
-                                height: 170,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                              const Positioned(
-                                left: 12,
-                                bottom: 12,
-                                right: 12,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Nut Butter Toast With Boiled Eggs",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      "164 kcal",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: panelTop,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: math.min(maxContentWidth, screenSize.width),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: sidePadding),
+                  child: SizedBox.expand(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          14,
+                          16,
+                          14,
+                          24 + bottomSafe,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            InkWell(
+                              onTap: () {},
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: const [
+                                    Text("Select Category"),
+                                    Icon(Icons.keyboard_arrow_down),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              "Choose Random Challenge",
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Center(
+                              child: SizedBox(
+                                width: 260,
+                                height: 36,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                  ),
+                                  onPressed: () =>
+                                      Get.toNamed(AppRoutes.challenges),
+                                  child: const Text(
+                                    "Start Random Challenge",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              "Current Challenges",
+                              style: TextStyle(
+                                fontSize: 21,
+                                color: Color(0xFF444444),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const _ChallengeItem(
+                              title: "Push Up",
+                              subtitle: "100 Push up a day",
+                              duration: "5:00 min",
+                              progress: 0.42,
+                              imageUrl:
+                                  "https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg",
+                            ),
+                            const SizedBox(height: 12),
+                            const _ChallengeItem(
+                              title: "Sit Up",
+                              subtitle: "20 Sit up a day",
+                              duration: "5:00 min",
+                              progress: 0.78,
+                              imageUrl:
+                                  "https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg",
+                            ),
+                            const SizedBox(height: 12),
+                            const _ChallengeItem(
+                              title: "Knee Push Up",
+                              subtitle: "20 reps",
+                              duration: "5:00 min",
+                              progress: 0.35,
+                              imageUrl:
+                                  "https://images.pexels.com/photos/414029/pexels-photo-414029.jpeg",
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: const [
+                                Text(
+                                  "Recommended Meal",
+                                  style: TextStyle(
+                                    fontSize: 23,
+                                    color: Color(0xFF676767),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  "View all",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF9A9A9A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                children: [
+                                  const FallbackNetworkImage(
+                                    imageUrl:
+                                        "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg",
+                                    height: 170,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  const Positioned(
+                                    left: 12,
+                                    bottom: 12,
+                                    right: 12,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Nut Butter Toast With Boiled Eggs",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          "164 kcal",
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-
-                  SizedBox(height: 120 + bottomSafe),
-                ],
+                ),
               ),
             ),
           ),

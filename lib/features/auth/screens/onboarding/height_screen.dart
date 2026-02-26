@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/primary_next_button.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 import 'package:fitness_app/core/widgets/unit_toggle.dart';
+import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class HeightScreen extends StatefulWidget {
   const HeightScreen({super.key});
@@ -13,21 +15,20 @@ class HeightScreen extends StatefulWidget {
 }
 
 class _HeightScreenState extends State<HeightScreen> {
+  final OnboardingService _onboardingService = OnboardingService();
   bool _isCm = false;
   int _selectedIndex = 8;
+  bool _saving = false;
 
   late final FixedExtentScrollController _controller;
 
   final List<int> _cmValues = List.generate(81, (i) => 120 + i);
-  final List<String> _ftValues = List.generate(
-    37,
-    (i) {
-      final totalInches = 48 + i; // 4'0" to 7'0"
-      final feet = totalInches ~/ 12;
-      final inches = totalInches % 12;
-      return "$feet' $inches\"";
-    },
-  );
+  final List<String> _ftValues = List.generate(37, (i) {
+    final totalInches = 48 + i; // 4'0" to 7'0"
+    final feet = totalInches ~/ 12;
+    final inches = totalInches % 12;
+    return "$feet' $inches\"";
+  });
 
   @override
   void initState() {
@@ -39,6 +40,38 @@ class _HeightScreenState extends State<HeightScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveAndContinue() async {
+    if (_saving) return;
+
+    final num heightValue;
+    final String unit;
+    if (_isCm) {
+      heightValue = _cmValues[_selectedIndex];
+      unit = 'cm';
+    } else {
+      heightValue = 48 + _selectedIndex;
+      unit = 'in';
+    }
+
+    setState(() => _saving = true);
+    OnboardingData.instance.heightValue = heightValue;
+    OnboardingData.instance.heightUnit = unit;
+
+    final result = await _onboardingService.saveStep(
+      step: 'height',
+      data: OnboardingData.instance.toMap(),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.success) {
+      Get.toNamed(AppRoutes.weight);
+    }
   }
 
   @override
@@ -72,8 +105,7 @@ class _HeightScreenState extends State<HeightScreen> {
                 onChanged: (leftSelected) {
                   setState(() {
                     _isCm = leftSelected;
-                    _selectedIndex =
-                        _selectedIndex.clamp(0, values.length - 1);
+                    _selectedIndex = _selectedIndex.clamp(0, values.length - 1);
                     _controller.jumpToItem(_selectedIndex);
                   });
                 },
@@ -109,8 +141,9 @@ class _HeightScreenState extends State<HeightScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: isSelected ? 18 : 16,
-                              fontWeight:
-                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               color: isSelected
                                   ? Colors.black
                                   : Colors.grey.shade600,
@@ -124,7 +157,8 @@ class _HeightScreenState extends State<HeightScreen> {
               ),
               const SizedBox(height: 24),
               PrimaryNextButton(
-                onPressed: () => Get.toNamed(AppRoutes.weight),
+                onPressed: _saving ? null : _saveAndContinue,
+                label: _saving ? 'Saving...' : 'Next',
               ),
             ],
           ),
@@ -133,6 +167,3 @@ class _HeightScreenState extends State<HeightScreen> {
     );
   }
 }
-
-
-

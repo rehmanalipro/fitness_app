@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:fitness_app/core/widgets/app_back_appbar.dart';
+import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
 
 class ProfileSettingScreen extends StatefulWidget {
@@ -39,8 +39,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppBackAppBar(title: 'Profile Settings'),
+    return MainLayout(
+      title: 'Profile Settings',
+      showAppBar: true,
+      showBackButton: true,
+      showBottomNav: false,
+      currentIndex: 5,
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -94,4 +98,3 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     );
   }
 }
-//

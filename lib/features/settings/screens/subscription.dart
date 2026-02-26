@@ -1,71 +1,106 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:fitness_app/routes/app_routes.dart';
 
-import 'package:fitness_app/core/widgets/app_back_appbar.dart';
+import 'package:fitness_app/layout/main_layout.dart';
+import 'package:fitness_app/features/settings/screens/subscription_plan.dart';
 
-class SubscriptionScreen extends StatelessWidget {
+class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppBackAppBar(title: 'Subscription'),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: const [
-          _PlanCard(
-            title: 'Free Plan',
-            subtitle: 'Basic workout and tracking features',
-            price: '\$0 / month',
-          ),
-          SizedBox(height: 12),
-          _PlanCard(
-            title: 'Pro Monthly',
-            subtitle: 'All premium workouts and guides',
-            price: '\$9.99 / month',
-          ),
-          SizedBox(height: 12),
-          _PlanCard(
-            title: 'Pro Yearly',
-            subtitle: 'Best value for full-year access',
-            price: '\$79.99 / year',
-          ),
-        ],
-      ),
-    );
-  }
+  State<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
 
-class _PlanCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String price;
+class _SubscriptionScreenState extends State<SubscriptionScreen> {
+  bool isBasicSelected = true;
 
-  const _PlanCard({
-    required this.title,
-    required this.subtitle,
-    required this.price,
-  });
+  final List<String> _basicIncluded = const [
+    '3 Beginner-Level Challenges Per Day',
+    '1 Daily Workout Video',
+    'Manual Meal Logging',
+    'General Meal Guides',
+    'Basic Trial Access Up To Gold III',
+    'Global Leaderboard View',
+    '3 Weekly Video Uploads (No HD)',
+    '1 Free Tutorial + 1 Free Workout Video/Week',
+  ];
+
+  final List<String> _basicExcluded = const [
+    'Time Extension Vault',
+    'Ad-Free',
+    'Offline Mode',
+    'Community Rooms',
+    'Custom Notifications',
+  ];
+
+  final List<String> _premiumIncluded = const [
+    'Unlimited Challenges Based On Fitness Level',
+    'Access To 100+ Curated Workout Videos',
+    'Add Personalized Challenges',
+    'Personalized Meal Plans',
+    'Advanced Meal Logging + Barcode Scan',
+    'Micronutrient Tracking',
+    'Unlimited HD Video Uploads',
+    'Elite Difficulty Challenges',
+    'Personal Leaderboard Rank, Badges, Highlights',
+    'Time Extension Vault (Bank 60 Days)',
+    '100% Ad-Free',
+    'Offline Mode Support',
+    'Challenge Chat Rooms + Expert Q&A',
+    'Motivational Alerts & Reminders',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    return MainLayout(
+      title: 'Subscription',
+      showAppBar: true,
+      showBackButton: true,
+      showBottomNav: false,
+      currentIndex: 5,
+      body: Container(
+        width: double.infinity,
+        color: const Color(0xFFF5F5F5),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: 18,
+              left: 14,
+              right: 14,
+              bottom: 16,
+            ),
+            child: Column(
+              children: [
+                SubscriptionTabSwitcher(
+                  isBasicSelected: isBasicSelected,
+                  onBasicTap: () => setState(() => isBasicSelected = true),
+                  onPremiumTap: () => setState(() => isBasicSelected = false),
+                ),
+                const SizedBox(height: 14),
+                SubscriptionFeatureContainer(
+                  title: isBasicSelected ? 'Basic Plan (Free)' : 'Premium Plan',
+                  included: isBasicSelected ? _basicIncluded : _premiumIncluded,
+                  excluded: isBasicSelected ? _basicExcluded : const [],
+                ),
+                const SizedBox(height: 12),
+                SubscriptionPrimaryButton(
+                  label: isBasicSelected ? 'Switch to Premium' : 'Continue',
+                  onTap: () {
+                    if (isBasicSelected) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => const PremiumPlansDialog(),
+                      );
+                      return;
+                    }
+                    Get.toNamed(AppRoutes.subscriptionOptions);
+                  },
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: Colors.black54)),
-          const SizedBox(height: 10),
-          Text(price, style: const TextStyle(fontWeight: FontWeight.w700)),
-        ],
+        ),
       ),
     );
   }

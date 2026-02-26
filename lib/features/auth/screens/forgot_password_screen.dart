@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/constants/otp_purpose.dart';
+import 'package:fitness_app/core/widgets/loading_dots_text.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -12,8 +14,47 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+    final result = await _authService.forgotPassword(
+      email: emailController.text,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+
+    if (!result.success) return;
+    if (result.otp == null || result.otp!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP not found in server response')),
+      );
+      return;
+    }
+    Get.offNamed(
+      AppRoutes.verification,
+      arguments: {
+        'purpose': OtpPurpose.forgotPassword,
+        'email': emailController.text.trim(),
+        'expectedOtp': result.otp,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +87,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 const Center(
                   child: Text(
-                    "Enter your email address to receive a password reset link.",
+                    "Enter your email address to receive an OTP code.",
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -68,22 +109,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
+                      disabledBackgroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      if (!_formKey.currentState!.validate()) return;
-
-                      Get.offNamed(
-                        AppRoutes.verification,
-                        arguments: OtpPurpose.forgotPassword,
-                      );
-                    },
-                    child: const Text(
-                      "Continue",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                    onPressed: _loading ? null : _sendOtp,
+                    child: _loading
+                        ? const LoadingDotsText(
+                            label: "Sending",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          )
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                   ),
                 ),
 
