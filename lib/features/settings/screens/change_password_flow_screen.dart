@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:fitness_app/core/constants/otp_purpose.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
@@ -14,12 +15,40 @@ class ChangePasswordFlowScreen extends StatefulWidget {
 }
 
 class _ChangePasswordFlowScreenState extends State<ChangePasswordFlowScreen> {
+  final AuthService _authService = AuthService();
   final emailController = TextEditingController();
+  bool _loading = false;
 
   @override
   void dispose() {
     emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendCode() async {
+    final email = emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid email')),
+      );
+      return;
+    }
+
+    setState(() => _loading = true);
+    final result = await _authService.sendChangePasswordOtp(email: email);
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+
+    if (!result.success) return;
+
+    Get.toNamed(
+      AppRoutes.verification,
+      arguments: {'purpose': OtpPurpose.changePassword, 'email': email},
+    );
   }
 
   @override
@@ -55,13 +84,10 @@ class _ChangePasswordFlowScreenState extends State<ChangePasswordFlowScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                onPressed: () => Get.toNamed(
-                  AppRoutes.verification,
-                  arguments: OtpPurpose.changePassword,
-                ),
-                child: const Text(
-                  'Send Code',
-                  style: TextStyle(color: Colors.white),
+                onPressed: _loading ? null : _sendCode,
+                child: Text(
+                  _loading ? 'Sending...' : 'Send Code',
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ),

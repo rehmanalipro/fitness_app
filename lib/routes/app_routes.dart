@@ -5,6 +5,7 @@ import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/create_account_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
+import '../features/auth/screens/set_new_password_screen.dart';
 
 import '../features/auth/screens/verification_screen.dart';
 import '../features/auth/screens/success_screen.dart';
@@ -47,6 +48,7 @@ class AppRoutes {
   static const String createAccount = '/create-account';
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
+  static const String setNewPassword = '/set-new-password';
 
   // flow based routes
   static const String verification = '/verification';
@@ -88,6 +90,17 @@ class AppRoutes {
     GetPage(name: createAccount, page: () => const CreateAccountScreen()),
     GetPage(name: login, page: () => const LoginScreen()),
     GetPage(name: forgotPassword, page: () => const ForgotPasswordScreen()),
+    GetPage(
+      name: setNewPassword,
+      page: () {
+        final args = Get.arguments as Map<String, dynamic>;
+        return SetNewPasswordScreen(
+          purpose: args['purpose'] as OtpPurpose,
+          email: (args['email'] ?? '').toString(),
+          otp: (args['otp'] ?? '').toString(),
+        );
+      },
+    ),
     GetPage(name: onboardingReady, page: () => const AreYouReadyScreen()),
     GetPage(name: gender, page: () => const GenderScreen()),
     GetPage(name: goal, page: () => const GoalScreen()),

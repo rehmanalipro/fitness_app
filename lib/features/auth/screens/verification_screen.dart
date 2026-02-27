@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:fitness_app/core/constants/otp_purpose.dart';
 import 'package:fitness_app/core/constants/success_purpose.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
 class VerificationScreen extends StatefulWidget {
@@ -50,11 +51,17 @@ class VerificationScreen extends StatefulWidget {
 }
 
 class _VerificationScreenState extends State<VerificationScreen> {
+  static const int _otpMaxLength = 4;
+  final AuthService _authService = AuthService();
   final List<TextEditingController> controllers = List.generate(
-    4,
+    _otpMaxLength,
     (_) => TextEditingController(),
   );
-  final List<FocusNode> focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> focusNodes = List.generate(
+    _otpMaxLength,
+    (_) => FocusNode(),
+  );
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -71,27 +78,38 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   Future<void> _handleContinue() async {
     final otp = _otp;
-    if (otp.length != 4 || otp.contains(RegExp(r'[^0-9]'))) {
+    if (otp.length != _otpMaxLength || otp.contains(RegExp(r'[^0-9]'))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid 4-digit OTP')),
       );
       return;
     }
 
-    if (widget.purpose == OtpPurpose.forgotPassword) {
-      final expectedOtp = widget.expectedOtp?.trim() ?? '';
-      if (expectedOtp.isEmpty) {
+    if (widget.purpose == OtpPurpose.signup ||
+        widget.purpose == OtpPurpose.forgotPassword) {
+      final email = widget.email?.trim() ?? '';
+      if (email.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP not available. Request again.')),
+          const SnackBar(content: Text('Email not found. Go back and retry.')),
         );
         return;
       }
-      if (otp != expectedOtp) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Invalid OTP')));
-        return;
-      }
+
+      setState(() => _loading = true);
+      final result = switch (widget.purpose) {
+        OtpPurpose.signup => await _authService.verifySignupOtp(
+          email: email,
+          otp: otp,
+        ),
+        _ => await _authService.verifyForgotOtp(email: email, otp: otp),
+      };
+      if (!mounted) return;
+      setState(() => _loading = false);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+      if (!result.success) return;
     }
 
     switch (widget.purpose) {
@@ -101,8 +119,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
       case OtpPurpose.forgotPassword:
       case OtpPurpose.changePassword:
         Get.offNamed(
-          AppRoutes.success,
-          arguments: SuccessPurpose.passwordUpdated,
+          AppRoutes.setNewPassword,
+          arguments: {
+            'purpose': widget.purpose,
+            'email': widget.email?.trim() ?? '',
+            'otp': otp,
+          },
         );
         break;
       case OtpPurpose.login:
@@ -147,7 +169,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 12,
-                children: List.generate(4, (index) {
+                children: List.generate(_otpMaxLength, (index) {
                   return SizedBox(
                     width: 56,
                     height: 56,
@@ -163,7 +185,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                       ),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (value) {
-                        if (value.isNotEmpty && index < 3) {
+                        if (value.isNotEmpty && index < _otpMaxLength - 1) {
                           FocusScope.of(
                             context,
                           ).requestFocus(focusNodes[index + 1]);
@@ -191,10 +213,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                   ),
-                  onPressed: _handleContinue,
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(color: Colors.white),
+                  onPressed: _loading ? null : _handleContinue,
+                  child: Text(
+                    _loading ? 'Verifying...' : 'Continue',
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ),

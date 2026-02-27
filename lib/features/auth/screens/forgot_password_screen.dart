@@ -40,18 +40,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     ).showSnackBar(SnackBar(content: Text(result.message)));
 
     if (!result.success) return;
-    if (result.otp == null || result.otp!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OTP not found in server response')),
-      );
-      return;
-    }
     Get.offNamed(
       AppRoutes.verification,
       arguments: {
         'purpose': OtpPurpose.forgotPassword,
         'email': emailController.text.trim(),
-        'expectedOtp': result.otp,
       },
     );
   }

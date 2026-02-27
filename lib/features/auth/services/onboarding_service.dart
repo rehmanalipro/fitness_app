@@ -120,6 +120,7 @@ class OnboardingService {
 
   List<String> _candidateUrls(String step) {
     return <String>[
+      ApiConfig.onboardingSaveUrl,
       ApiConfig.auth(''),
       ApiConfig.auth('onboarding'),
       ApiConfig.auth('onboarding/$step'),

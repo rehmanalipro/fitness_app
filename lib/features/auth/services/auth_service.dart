@@ -31,14 +31,16 @@ class AuthService {
     String? phone,
   }) async {
     final body = {
-      'type': 'signup',
       'name': name.trim(),
       'email': email.trim(),
       'password': password,
       if (phone != null && phone.trim().isNotEmpty) 'number': phone.trim(),
     };
 
-    return _authenticate(url: ApiConfig.auth(''), body: body);
+    return _authenticateCandidates(
+      urls: [ApiConfig.authSignupUrl],
+      body: body,
+    );
   }
 
   // LOGIN
@@ -46,22 +48,127 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final body = {'type': 'login', 'email': email.trim(), 'password': password};
+    final body = {'email': email.trim(), 'password': password};
 
-    return _authenticate(url: ApiConfig.auth(''), body: body);
+    return _authenticateCandidates(
+      urls: [ApiConfig.authLoginUrl, ApiConfig.authSigninUrl],
+      body: body,
+    );
   }
 
   // FORGOT PASSWORD (SEND OTP)
   Future<AuthResult> forgotPassword({required String email}) async {
     final normalizedEmail = email.trim();
 
+    return _authenticateCandidates(
+      urls: [ApiConfig.authForgotPasswordUrl],
+      body: {'email': normalizedEmail},
+    );
+  }
+
+  Future<AuthResult> verifySignupOtp({
+    required String email,
+    required String otp,
+  }) async {
+    return _authenticateCandidates(
+      urls: [ApiConfig.authVerifySignupOtpUrl],
+      body: {'email': email.trim(), 'otp': otp.trim()},
+    );
+  }
+
+  Future<AuthResult> verifyForgotOtp({
+    required String email,
+    required String otp,
+  }) async {
+    return _authenticateCandidates(
+      urls: [ApiConfig.authVerifyForgotOtpUrl],
+      body: {'email': email.trim(), 'otp': otp.trim()},
+    );
+  }
+
+  Future<AuthResult> verifyChangePasswordOtp({
+    required String email,
+    required String otp,
+  }) async {
     return _authenticate(
-      url: ApiConfig.auth(''),
-      body: {'type': 'forgot_password', 'email': normalizedEmail},
+      url: ApiConfig.authVerifyChangePasswordOtpUrl,
+      body: {'email': email.trim(), 'otp': otp.trim()},
+    );
+  }
+
+  Future<AuthResult> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+    String? confirmPassword,
+  }) async {
+    return _authenticateCandidates(
+      urls: [ApiConfig.authResetPasswordUrl],
+      body: {
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'password': newPassword,
+        'new_password': newPassword,
+        if (confirmPassword != null && confirmPassword.trim().isNotEmpty)
+          'confirm_password': confirmPassword.trim(),
+      },
+    );
+  }
+
+  Future<AuthResult> sendChangePasswordOtp({required String email}) async {
+    return _authenticateCandidates(
+      urls: [ApiConfig.authSendChangePasswordOtpUrl],
+      body: {'email': email.trim()},
+    );
+  }
+
+  Future<AuthResult> changePassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+    required String otp,
+  }) async {
+    return _authenticateCandidates(
+      urls: [ApiConfig.authChangePasswordUrl, ApiConfig.authConfirmPasswordUrl],
+      body: {
+        'email': email.trim(),
+        'new_password': newPassword,
+        'confirm_password': confirmPassword.trim(),
+        'password_confirmation': confirmPassword.trim(),
+        'otp': otp.trim(),
+      },
     );
   }
 
   // CORE AUTH METHOD
+  Future<AuthResult> _authenticateCandidates({
+    required List<String> urls,
+    required Map<String, dynamic> body,
+  }) async {
+    AuthResult? lastResult;
+
+    for (final url in urls) {
+      final result = await _authenticate(url: url, body: body);
+      if (result.success) return result;
+
+      lastResult = result;
+      if (!_isEndpointMissing(result.message)) {
+        return result;
+      }
+    }
+
+    return lastResult ??
+        const AuthResult(success: false, message: 'Unable to connect to server');
+  }
+
+  bool _isEndpointMissing(String message) {
+    final lowered = message.toLowerCase();
+    return lowered.contains('404') ||
+        lowered.contains('not found') ||
+        lowered.contains('could not be found') ||
+        lowered.contains('the route');
+  }
+
   Future<AuthResult> _authenticate({
     required String url,
     required Map<String, dynamic> body,
@@ -77,7 +184,10 @@ class AuthService {
       final response = await http
           .post(
             Uri.parse(url),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 20));

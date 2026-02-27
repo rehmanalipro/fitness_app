@@ -61,7 +61,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       context,
     ).showSnackBar(SnackBar(content: Text(result.message)));
     if (result.success) {
-      Get.offNamed(AppRoutes.verification, arguments: OtpPurpose.signup);
+      Get.offNamed(
+        AppRoutes.verification,
+        arguments: {
+          'purpose': OtpPurpose.signup,
+          'email': emailController.text.trim(),
+        },
+      );
     }
   }
 
