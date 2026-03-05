@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
-import 'package:fitness_app/core/constants/otp_purpose.dart';
 import 'package:fitness_app/core/widgets/loading_dots_text.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 
@@ -42,7 +41,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     if (!agreeTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please accept Terms & Conditions")),
+        SnackBar(content: Text("Please accept Terms & Conditions".tr)),
       );
       return;
     }
@@ -61,13 +60,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       context,
     ).showSnackBar(SnackBar(content: Text(result.message)));
     if (result.success) {
-      Get.offNamed(
-        AppRoutes.verification,
-        arguments: {
-          'purpose': OtpPurpose.signup,
-          'email': emailController.text.trim(),
-        },
-      );
+      Get.offAllNamed(AppRoutes.home);
     }
   }
 
@@ -92,7 +85,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 children: [
                   Center(
                     child: Text(
-                      "Create Your Account",
+                      "Create Your Account".tr,
                       style: TextStyle(
                         fontSize: isDesktop ? 26 : size.width * 0.07,
                         fontWeight: FontWeight.bold,
@@ -110,7 +103,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       initialCountryCode: "US",
                       disableLengthCheck: true,
                       decoration: InputDecoration(
-                        hintText: "Phone Number",
+                        hintText: "Phone Number".tr,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -136,10 +129,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           });
                         },
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          "I agree to the Terms & Conditions",
-                          style: TextStyle(fontSize: 14),
+                          "I agree to the Terms & Conditions".tr,
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ),
                     ],
@@ -165,15 +158,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                       ),
                       onPressed: _loading ? null : _registerUser,
                       child: _loading
-                          ? const LoadingDotsText(
-                              label: "Creating account",
-                              style: TextStyle(
+                          ? LoadingDotsText(
+                              label: "Creating account".tr,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              "Sign Up",
+                          : Text(
+                              "Sign Up".tr,
                               style: TextStyle(
                                 fontSize: 20,
                                 color: Colors.white,
@@ -186,7 +179,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
                   Center(
                     child: Text(
-                      "Or With",
+                      "Or With".tr,
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ),
@@ -215,14 +208,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Already have an account? '),
+                      Text('Already have an account? '.tr),
                       GestureDetector(
                         onTap: () {
                           Get.toNamed(AppRoutes.login);
                         },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          'Login'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -261,7 +254,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           return null;
         },
         decoration: InputDecoration(
-          hintText: hint,
+          hintText: hint.tr,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           suffixIcon: isPassword
               ? IconButton(

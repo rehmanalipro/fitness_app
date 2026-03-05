@@ -36,6 +36,115 @@ class AppApiService {
     return _toResult(response);
   }
 
+  Future<Map<String, dynamic>> uploadMediaPost({
+    required File mediaFile,
+    required bool isVideo,
+    required String caption,
+    required String visibility,
+    String? soundPath,
+    String? soundName,
+    double speed = 1.0,
+  }) async {
+    final token = await _authService.getToken();
+    final endpoints = <String>[
+      ApiConfig.mediaPostsUrl,
+      ApiConfig.profileMediaUrl,
+      ApiConfig.api('posts/media'),
+      ApiConfig.api('posts'),
+      ApiConfig.root('media/posts'),
+      ApiConfig.root('profile/media'),
+      ApiConfig.root('posts/media'),
+      ApiConfig.root('posts'),
+    ];
+    final tried = <Map<String, dynamic>>[];
+
+    for (final url in endpoints) {
+      final uri = Uri.parse(url);
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(_authHeaders(token));
+      request.fields['caption'] = caption;
+      request.fields['visibility'] = visibility.toLowerCase();
+      request.fields['type'] = isVideo ? 'video' : 'image';
+      request.fields['speed'] = speed.toStringAsFixed(2);
+      if (soundName != null && soundName.trim().isNotEmpty) {
+        request.fields['sound_name'] = soundName.trim();
+      }
+      if (soundPath != null && soundPath.trim().isNotEmpty) {
+        try {
+          request.files.add(
+            await http.MultipartFile.fromPath('sound', soundPath),
+          );
+        } catch (_) {}
+      }
+
+      final mediaFieldNames = <String>[
+        isVideo ? 'video' : 'image',
+        'media',
+        'file',
+        'upload',
+      ];
+      for (final field in mediaFieldNames) {
+        try {
+          request.files.add(
+            await http.MultipartFile.fromPath(field, mediaFile.path),
+          );
+        } catch (_) {}
+      }
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      final result = _toResult(response);
+      if (result['ok'] == true) {
+        result['endpoint'] = url;
+        return result;
+      }
+      tried.add(<String, dynamic>{
+        'endpoint': url,
+        'statusCode': result['statusCode'],
+      });
+    }
+
+    if (!isVideo) {
+      final uri = Uri.parse(ApiConfig.profileImageUrl);
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(_authHeaders(token));
+      request.fields['caption'] = caption;
+      request.fields['visibility'] = visibility.toLowerCase();
+      request.files.add(
+        await http.MultipartFile.fromPath('image', mediaFile.path),
+      );
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      final result = _toResult(response);
+      if (result['ok'] == true) {
+        result['endpoint'] = ApiConfig.profileImageUrl;
+        return result;
+      }
+      tried.add(<String, dynamic>{
+        'endpoint': ApiConfig.profileImageUrl,
+        'statusCode': result['statusCode'],
+      });
+    }
+
+    return <String, dynamic>{
+      'ok': false,
+      'statusCode': 404,
+      'data': <String, dynamic>{
+        'message': isVideo
+            ? 'Video upload endpoint not found on backend'
+            : 'Image upload endpoint not found on backend',
+        'tried': tried,
+      },
+    };
+  }
+
+  Future<Map<String, dynamic>> getProfileMedia() async {
+    final result = await _get(ApiConfig.profileMediaUrl);
+    if (result['ok'] == true) return result;
+    return _get(ApiConfig.mediaPostsUrl);
+  }
+
   Future<Map<String, dynamic>> getChallengeCategories() async {
     return _get(ApiConfig.challengeCategoriesUrl);
   }
@@ -90,8 +199,8 @@ class AppApiService {
       headers: _jsonHeaders(token),
     );
     return _toResult(response);
-  }
-
+  }   
+      
   Future<Map<String, dynamic>> _post(
     String url, {
     required Map<String, dynamic> body,
@@ -104,7 +213,7 @@ class AppApiService {
     );
     return _toResult(response);
   }
-
+     
   Future<Map<String, dynamic>> _delete(String url) async {
     final token = await _authService.getToken();
     final response = await http.delete(
@@ -122,6 +231,7 @@ class AppApiService {
     };
   }
 
+
   Map<String, String> _authHeaders(String? token) {
     if (token == null || token.trim().isEmpty) return <String, String>{};
     return <String, String>{'Authorization': 'Bearer $token'};
@@ -133,7 +243,7 @@ class AppApiService {
       decoded = jsonDecode(response.body);
     } catch (_) {
       decoded = null;
-    }
+    }    
 
     final data = decoded is Map<String, dynamic>
         ? decoded
