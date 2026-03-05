@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:fitness_app/features/auth/services/auth_service.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,8 +11,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  final AuthService _authService = AuthService();
-
   @override
   void initState() {
     super.initState();
@@ -22,9 +19,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _handleStartup() async {
     await Future<void>.delayed(const Duration(seconds: 2));
-    final loggedIn = await _authService.isLoggedIn();
     if (!mounted) return;
-    Get.offNamed(loggedIn ? AppRoutes.home : AppRoutes.login);
+    Get.offNamed(AppRoutes.login);
   }
 
   @override
