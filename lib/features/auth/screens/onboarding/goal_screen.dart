@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
-import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class GoalScreen extends StatefulWidget {
   const GoalScreen({super.key});
@@ -13,7 +12,6 @@ class GoalScreen extends StatefulWidget {
 }
 
 class _GoalScreenState extends State<GoalScreen> {
-  final OnboardingService _onboardingService = OnboardingService();
   String? selectedGoal;
   bool _saving = false;
 
@@ -22,20 +20,8 @@ class _GoalScreenState extends State<GoalScreen> {
 
     setState(() => _saving = true);
     OnboardingData.instance.goal = selectedGoal;
-
-    final result = await _onboardingService.saveStep(
-      step: 'goal',
-      data: OnboardingData.instance.toMap(),
-    );
-    if (!mounted) return;
     setState(() => _saving = false);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.message)));
-    if (result.success) {
-      Get.toNamed(AppRoutes.fitnessLevel);
-    }
+    Get.toNamed(AppRoutes.fitnessLevel);
   }
 
   @override
@@ -133,24 +119,11 @@ class _GoalScreenState extends State<GoalScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: selectedGoal == null || _saving
-                      ? null
-                      : _saveAndContinue,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Text(
-                          "Next",
-                          style: TextStyle(color: Colors.white),
-                        ),
+                  onPressed: _saveAndContinue,
+                  child: const Text(
+                    "Next",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],

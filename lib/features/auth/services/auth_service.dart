@@ -22,6 +22,12 @@ class AuthResult {
 class AuthService {
   static const _tokenKey = 'auth_token';
   static const _emailKey = 'auth_email';
+  static const _passwordKey = 'auth_password';
+  static const _signupEmailKey = 'signup_email';
+  static const _pendingSignupNameKey = 'pending_signup_name';
+  static const _pendingSignupEmailKey = 'pending_signup_email';
+  static const _pendingSignupPasswordKey = 'pending_signup_password';
+  static const _pendingSignupPhoneKey = 'pending_signup_phone';
 
   // REGISTER
   Future<AuthResult> register({
@@ -29,18 +35,24 @@ class AuthService {
     required String email,
     required String password,
     String? phone,
+    Map<String, dynamic>? onboardingData,
   }) async {
     final body = {
       'name': name.trim(),
       'email': email.trim(),
       'password': password,
       if (phone != null && phone.trim().isNotEmpty) 'number': phone.trim(),
+      if (onboardingData != null) ...onboardingData,
     };
 
-    return _authenticateCandidates(
+    final result = await _authenticateCandidates(
       urls: [ApiConfig.authSignupUrl],
       body: body,
     );
+    if (result.success) {
+      await saveSignupEmail(email.trim());
+    }
+    return result;
   }
 
   // LOGIN
@@ -90,8 +102,11 @@ class AuthService {
     required String email,
     required String otp,
   }) async {
-    return _authenticate(
-      url: ApiConfig.authVerifyChangePasswordOtpUrl,
+    return _authenticateCandidates(
+      urls: [
+        ApiConfig.authVerifyChangePasswordOtpUrl,
+        ApiConfig.authChangePasswordUrl,
+      ],
       body: {'email': email.trim(), 'otp': otp.trim()},
     );
   }
@@ -158,7 +173,10 @@ class AuthService {
     }
 
     return lastResult ??
-        const AuthResult(success: false, message: 'Unable to connect to server');
+        const AuthResult(
+          success: false,
+          message: 'Unable to connect to server',
+        );
   }
 
   bool _isEndpointMissing(String message) {
@@ -210,9 +228,13 @@ class AuthService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final token = _extractToken(data);
         final email = _extractEmail(data, body);
+        final password = _extractPassword(body);
         final otp = _extractOtp(data);
         if (email != null && email.isNotEmpty) {
           await saveEmail(email);
+        }
+        if (password != null && password.isNotEmpty) {
+          await savePassword(password);
         }
         if (token != null && token.isNotEmpty) {
           await saveToken(token);
@@ -309,6 +331,17 @@ class AuthService {
     return null;
   }
 
+  String? _extractPassword(Map<String, dynamic> requestBody) {
+    final direct = requestBody['password'];
+    if (direct is String && direct.trim().isNotEmpty) return direct;
+
+    final newPassword = requestBody['new_password'];
+    if (newPassword is String && newPassword.trim().isNotEmpty) {
+      return newPassword;
+    }
+    return null;
+  }
+
   // SAVE TOKEN
   Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -318,6 +351,29 @@ class AuthService {
   Future<void> saveEmail(String email) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_emailKey, email.trim());
+  }
+
+  Future<void> savePassword(String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_passwordKey, password);
+  }
+
+  Future<void> saveSignupEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_signupEmailKey, email.trim());
+  }
+
+  Future<void> savePendingSignupData({
+    required String name,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingSignupNameKey, name.trim());
+    await prefs.setString(_pendingSignupEmailKey, email.trim());
+    await prefs.setString(_pendingSignupPasswordKey, password);
+    await prefs.setString(_pendingSignupPhoneKey, (phone ?? '').trim());
   }
 
   // GET TOKEN
@@ -331,6 +387,34 @@ class AuthService {
     return prefs.getString(_emailKey);
   }
 
+  Future<String?> getPassword() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_passwordKey);
+  }
+
+  Future<String?> getSignupEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_signupEmailKey);
+  }
+
+  Future<Map<String, String>> getPendingSignupData() async {
+    final prefs = await SharedPreferences.getInstance();
+    return <String, String>{
+      'name': prefs.getString(_pendingSignupNameKey) ?? '',
+      'email': prefs.getString(_pendingSignupEmailKey) ?? '',
+      'password': prefs.getString(_pendingSignupPasswordKey) ?? '',
+      'phone': prefs.getString(_pendingSignupPhoneKey) ?? '',
+    };
+  }
+
+  Future<void> clearPendingSignupData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pendingSignupNameKey);
+    await prefs.remove(_pendingSignupEmailKey);
+    await prefs.remove(_pendingSignupPasswordKey);
+    await prefs.remove(_pendingSignupPhoneKey);
+  }
+
   // CHECK LOGIN
   Future<bool> isLoggedIn() async {
     final token = await getToken();
@@ -342,5 +426,8 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_emailKey);
+    await prefs.remove(_passwordKey);
+    await prefs.remove(_signupEmailKey);
+    await clearPendingSignupData();
   }
 }

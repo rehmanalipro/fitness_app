@@ -47,7 +47,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     }
 
     setState(() => _loading = true);
-    final result = await _authService.register(
+    await _authService.savePendingSignupData(
       name: nameController.text,
       email: emailController.text,
       password: passwordController.text,
@@ -56,12 +56,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.message)));
-    if (result.success) {
-      Get.offAllNamed(AppRoutes.home);
-    }
+    Get.offNamed(AppRoutes.onboardingReady);
   }
 
   @override

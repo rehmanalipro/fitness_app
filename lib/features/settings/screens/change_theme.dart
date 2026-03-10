@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:fitness_app/layout/main_layout.dart';
@@ -12,6 +13,18 @@ class ChangeThemeScreen extends StatefulWidget {
 
 class _ChangeThemeScreenState extends State<ChangeThemeScreen> {
   String selectedTheme = 'Light';
+
+  @override
+  void initState() {
+    super.initState();
+    // Sync initial selection with current theme mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final mode = AdaptiveTheme.of(context).mode;
+      setState(() {
+        selectedTheme = mode.isDark ? 'Dark' : 'Light';
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +64,9 @@ class _ChangeThemeScreenState extends State<ChangeThemeScreen> {
                       ),
                     ),
                     onPressed: () => _saveTheme(context),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      'Save'.tr,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -69,7 +82,15 @@ class _ChangeThemeScreenState extends State<ChangeThemeScreen> {
     final isSelected = themeName == selectedTheme;
 
     return InkWell(
-      onTap: () => setState(() => selectedTheme = themeName),
+      onTap: () {
+        setState(() => selectedTheme = themeName);
+        // Apply theme immediately when user taps the option
+        if (themeName == 'Dark') {
+          AdaptiveTheme.of(context).setDark();
+        } else {
+          AdaptiveTheme.of(context).setLight();
+        }
+      },
       borderRadius: BorderRadius.circular(10),
       child: Container(
         width: 345,
@@ -85,7 +106,7 @@ class _ChangeThemeScreenState extends State<ChangeThemeScreen> {
         ),
         alignment: Alignment.centerLeft,
         child: Text(
-          themeName,
+          themeName.tr,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),

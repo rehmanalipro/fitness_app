@@ -29,6 +29,7 @@ import '../features/auth/screens/onboarding/weight_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/screens/food_log_screen.dart';
 import '../features/home/screens/challenges_screen.dart';
+import '../features/home/screens/random_challenge_screen.dart';
 import '../features/home/screens/challenges_feed_screen.dart';
 import '../features/home/screens/leaderboard_screen.dart';
 import '../features/home/screens/guides_screen.dart';
@@ -36,6 +37,7 @@ import '../features/home/screens/invite_friend_screen.dart';
 import '../features/home/screens/notifications_screen.dart';
 import '../features/home/screens/profile_screen.dart';
 import '../features/home/screens/add_media_screen.dart';
+import '../features/home/screens/reels_home_screen.dart';
 import '../features/home/screens/add_challenge_post_screen.dart';
 import '../features/home/screens/challenge_post_detail_screen.dart';
 
@@ -65,6 +67,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String foodLog = '/food-log';
   static const String challenges = '/challenges';
+  static const String randomChallenge = '/random-challenge';
   static const String chatChallenges = '/chat-challenges';
   static const String addChallengePost = '/add-challenge-post';
   static const String challengePostDetail = '/challenge-post-detail';
@@ -83,6 +86,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String inviteFriend = '/invite-friend';
   static const String profile = '/profile';
+  static const String reelsHome = '/reels-home';
 
   // GetX pages
   static final List<GetPage<dynamic>> pages = [
@@ -111,6 +115,7 @@ class AppRoutes {
     GetPage(name: home, page: () => const HomeScreen()),
     GetPage(name: foodLog, page: () => const FoodLogScreen()),
     GetPage(name: challenges, page: () => const ChallengesFeedScreen()),
+    GetPage(name: randomChallenge, page: () => const RandomChallengeScreen()),
     GetPage(name: chatChallenges, page: () => const ChallengesScreen()),
     GetPage(name: addChallengePost, page: () => const AddChallengePostScreen()),
     GetPage(
@@ -121,6 +126,7 @@ class AppRoutes {
     GetPage(name: guides, page: () => const GuidesScreen()),
     GetPage(name: inviteFriend, page: () => const InviteFriendScreen()),
     GetPage(name: profile, page: () => const ProfileScreen()),
+    GetPage(name: reelsHome, page: () => const ReelsHomeScreen()),
     GetPage(name: settings, page: () => const SettingsScreen()),
     GetPage(name: profileSettings, page: () => const ProfileSettingScreen()),
     GetPage(name: subscription, page: () => const SubscriptionScreen()),

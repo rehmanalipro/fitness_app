@@ -12,6 +12,7 @@ class ExploreGroupChatPanel extends StatefulWidget {
 
 class _ExploreGroupChatPanelState extends State<ExploreGroupChatPanel> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
 
   Uint8List? _pendingImage;
@@ -43,9 +44,25 @@ class _ExploreGroupChatPanelState extends State<ExploreGroupChatPanel> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToLatest() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _pickImage() async {
@@ -79,150 +96,128 @@ class _ExploreGroupChatPanelState extends State<ExploreGroupChatPanel> {
       _messageController.clear();
       _pendingImage = null;
     });
-  } //
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
+  }
 
   @override
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final panelWidth = constraints.maxWidth.clamp(280.0, 390.0);
-        final panelHeight = constraints.maxHeight.clamp(420.0, 738.0);
-        const sendWidth = 54.0;
-        const sidePadding = 12.0;
-        const gap = 8.0;
-        final inputWidth = (panelWidth - (sidePadding * 2) - gap - sendWidth)
-            .clamp(180.0, 335.0);
-
-        return Align(
-          alignment: Alignment.topCenter,
-          child: AnimatedPadding(
-            duration: const Duration(milliseconds: 150),
-            padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 8 : 0),
-            child: SizedBox(
-              width: panelWidth,
-              height: panelHeight,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                  border: Border.all(color: const Color(0xFFE5E5E5), width: 1),
-                ),
-                child: Column(
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          border: Border.all(color: const Color(0xFFE5E5E5), width: 1),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                controller: _scrollController,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                itemCount: _messages.length,
+                separatorBuilder: (_, separatorIndex) =>
+                    const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  return _MessageBubble(message: message);
+                },
+              ),
+            ),
+            if (_pendingImage != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Stack(
                   children: [
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        itemCount: _messages.length,
-                        separatorBuilder: (_, separatorIndex) =>
-                            const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          return _MessageBubble(message: message);
-                        },
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        _pendingImage!,
+                        height: 80,
+                        width: 120,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    if (_pendingImage != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.memory(
-                                _pendingImage!,
-                                height: 80,
-                                width: 120,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              right: -6,
-                              top: -6,
-                              child: IconButton(
-                                onPressed: () =>
-                                    setState(() => _pendingImage = null),
-                                icon: const Icon(
-                                  Icons.cancel,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    SizedBox(
-                      width: panelWidth,
-                      height: 62,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: sidePadding,
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: inputWidth,
-                              height: 50,
-                              child: TextField(
-                                controller: _messageController,
-                                decoration: InputDecoration(
-                                  hintText: 'Write your message',
-                                  prefixIcon: IconButton(
-                                    onPressed: _pickImage,
-                                    icon: const Icon(Icons.attach_file),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFDCDCDC),
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFDCDCDC),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: gap),
-                            SizedBox(
-                              width: sendWidth,
-                              height: 50,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                ),
-                                onPressed: _sendMessage,
-                                child: const Icon(
-                                  Icons.send,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: IconButton(
+                        onPressed: () => setState(() => _pendingImage = null),
+                        icon: const Icon(Icons.cancel, color: Colors.black87),
                       ),
                     ),
                   ],
                 ),
               ),
+            SafeArea(
+              top: false,
+              minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: TextField(
+                        controller: _messageController,
+                        textInputAction: TextInputAction.send,
+                        onTap: _scrollToLatest,
+                        onSubmitted: (_) => _sendMessage(),
+                        decoration: InputDecoration(
+                          hintText: 'Write your message',
+                          prefixIcon: IconButton(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.attach_file),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFDCDCDC),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFDCDCDC),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 54,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: _sendMessage,
+                      child: const Icon(Icons.send, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

@@ -128,64 +128,101 @@ class _GuidesScreenState extends State<GuidesScreen> {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    bottom: 24 + MediaQuery.of(context).padding.bottom,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: sidePadding),
-                        child: SizedBox(
-                          width: tabWidth,
-                          height: 40,
-                          child: _GuideTabs(
-                            tabs: const ['For You', 'Explore', 'Chat'],
-                            selectedIndex: _topTabIndex,
-                            onTap: (index) {
-                              setState(() {
-                                _topTabIndex = index;
-                              });
-                            },
+                child: SizedBox(
+                  height: constraints.maxHeight,
+                  child: _topTabIndex == 1
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 12),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: sidePadding,
+                              ),
+                              child: SizedBox(
+                                width: tabWidth,
+                                height: 40,
+                                child: _GuideTabs(
+                                  tabs: const ['For You', 'Explore', 'Chat'],
+                                  selectedIndex: _topTabIndex,
+                                  onTap: (index) {
+                                    setState(() {
+                                      _topTabIndex = index;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: sidePadding,
+                                ),
+                                child: const ExploreGroupChatPanel(),
+                              ),
+                            ),
+                          ],
+                        )
+                      : SingleChildScrollView(
+                          padding: EdgeInsets.only(
+                            bottom: 24 + MediaQuery.of(context).padding.bottom,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 12),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: sidePadding,
+                                ),
+                                child: SizedBox(
+                                  width: tabWidth,
+                                  height: 40,
+                                  child: _GuideTabs(
+                                    tabs: const ['For You', 'Explore', 'Chat'],
+                                    selectedIndex: _topTabIndex,
+                                    onTap: (index) {
+                                      setState(() {
+                                        _topTabIndex = index;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_topTabIndex == 0)
+                                _ForYouSection(sidePadding: sidePadding)
+                              else if (_topTabIndex == 2)
+                                _ChatSection(
+                                  sidePadding: sidePadding,
+                                  tabWidth: tabWidth,
+                                  chatFilterIndex: _chatFilterIndex,
+                                  onFoodTap: () {
+                                    setState(() {
+                                      _chatFilterIndex = 0;
+                                    });
+                                  },
+                                  onChallengeTap: () {
+                                    setState(() {
+                                      _chatFilterIndex = 1;
+                                    });
+                                    Get.toNamed(AppRoutes.chatChallenges);
+                                  },
+                                  profileController: _profileController,
+                                  posts: _foodPosts,
+                                  onLikeTap: _increaseLikes,
+                                  onReplyTap: _openReplyDialog,
+                                )
+                              else
+                                _GuidePlaceholder(
+                                  title: 'Explore Feed',
+                                  message:
+                                      'Switch to For You for media content and Chat for community posts.',
+                                ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_topTabIndex == 0)
-                        _ForYouSection(sidePadding: sidePadding)
-                      else if (_topTabIndex == 1)
-                        const ExploreGroupChatPanel()
-                      else if (_topTabIndex == 2)
-                        _ChatSection(
-                          sidePadding: sidePadding,
-                          tabWidth: tabWidth,
-                          chatFilterIndex: _chatFilterIndex,
-                          onFoodTap: () {
-                            setState(() {
-                              _chatFilterIndex = 0;
-                            });
-                          },
-                          onChallengeTap: () {
-                            setState(() {
-                              _chatFilterIndex = 1;
-                            });
-                            Get.toNamed(AppRoutes.chatChallenges);
-                          },
-                          profileController: _profileController,
-                          posts: _foodPosts,
-                          onLikeTap: _increaseLikes,
-                          onReplyTap: _openReplyDialog,
-                        )
-                      else
-                        _GuidePlaceholder(
-                          title: 'Explore Feed',
-                          message:
-                              'Switch to For You for media content and Chat for community posts.',
-                        ),
-                    ],
-                  ),
                 ),
               ),
             );

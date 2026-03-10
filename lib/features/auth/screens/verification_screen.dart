@@ -80,17 +80,18 @@ class _VerificationScreenState extends State<VerificationScreen> {
     final otp = _otp;
     if (otp.length != _otpMaxLength || otp.contains(RegExp(r'[^0-9]'))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid 4-digit OTP')),
+        SnackBar(content: Text('Please enter a valid 4-digit OTP'.tr)),
       );
       return;
     }
 
     if (widget.purpose == OtpPurpose.signup ||
-        widget.purpose == OtpPurpose.forgotPassword) {
+        widget.purpose == OtpPurpose.forgotPassword ||
+        widget.purpose == OtpPurpose.changePassword) {
       final email = widget.email?.trim() ?? '';
       if (email.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email not found. Go back and retry.')),
+          SnackBar(content: Text('Email not found. Go back and retry.'.tr)),
         );
         return;
       }
@@ -101,7 +102,15 @@ class _VerificationScreenState extends State<VerificationScreen> {
           email: email,
           otp: otp,
         ),
-        _ => await _authService.verifyForgotOtp(email: email, otp: otp),
+        OtpPurpose.forgotPassword => await _authService.verifyForgotOtp(
+          email: email,
+          otp: otp,
+        ),
+        OtpPurpose.changePassword => await _authService.verifyChangePasswordOtp(
+          email: email,
+          otp: otp,
+        ),
+        _ => const AuthResult(success: false, message: 'Invalid OTP purpose'),
       };
       if (!mounted) return;
       setState(() => _loading = false);
@@ -152,7 +161,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                widget.title,
+                widget.title.tr,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -161,7 +170,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                widget.description,
+                widget.description.tr,
                 style: const TextStyle(color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
@@ -215,7 +224,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   ),
                   onPressed: _loading ? null : _handleContinue,
                   child: Text(
-                    _loading ? 'Verifying...' : 'Continue',
+                    _loading ? 'Verifying...'.tr : 'Continue'.tr,
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),

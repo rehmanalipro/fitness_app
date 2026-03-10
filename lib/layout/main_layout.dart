@@ -19,6 +19,7 @@ class MainLayout extends StatelessWidget {
   final bool constrainBody;
   final double? contentMaxWidth;
   final bool useScreenPadding;
+  final bool highlightCenterAdd;
 
   const MainLayout({
     super.key,
@@ -34,10 +35,20 @@ class MainLayout extends StatelessWidget {
     this.constrainBody = true,
     this.contentMaxWidth,
     this.useScreenPadding = true,
+    this.highlightCenterAdd = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = theme.colorScheme.surface;
+    final bottomBarColor = theme.colorScheme.surface;
+    final bottomActiveColor = isDark
+        ? Colors.white
+        : Colors.black; // icon/text colors
+    const bottomInactiveColor = Color(0xFFCFCFCF);
+
     final maxContentWidth =
         contentMaxWidth ?? AppResponsive.contentMaxWidth(context);
     final horizontalPadding = AppResponsive.screenPadding(context).left;
@@ -66,9 +77,16 @@ class MainLayout extends StatelessWidget {
 
     if (!showAppBar || isHome) {
       return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(top: false, bottom: false, child: paddedBody),
         bottomNavigationBar: showBottomNav
-            ? _BottomNavBar(currentIndex: currentIndex)
+            ? _BottomNavBar(
+                currentIndex: currentIndex,
+                highlightCenterAdd: highlightCenterAdd,
+                backgroundColor: bottomBarColor,
+                activeColor: bottomActiveColor,
+                inactiveColor: bottomInactiveColor,
+              )
             : null,
       );
     }
@@ -78,6 +96,7 @@ class MainLayout extends StatelessWidget {
     final bodyTop = screenSize.height < 700 ? 120.0 : 127.0;
     // Manually building header to allow avatar and back button in the same space without affecting title position
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         top: false,
         bottom: false,
@@ -98,9 +117,9 @@ class MainLayout extends StatelessWidget {
             Positioned.fill(
               top: bodyTop,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
@@ -112,7 +131,13 @@ class MainLayout extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: showBottomNav
-          ? _BottomNavBar(currentIndex: currentIndex)
+          ? _BottomNavBar(
+              currentIndex: currentIndex,
+              highlightCenterAdd: highlightCenterAdd,
+              backgroundColor: bottomBarColor,
+              activeColor: bottomActiveColor,
+              inactiveColor: bottomInactiveColor,
+            )
           : null,
     );
   }
@@ -197,7 +222,7 @@ class _ManualHeader extends StatelessWidget {
             height: 32,
             child: Center(
               child: Text(
-                title,
+                title.tr,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -294,8 +319,18 @@ class _HeaderAvatar extends StatelessWidget {
 
 class _BottomNavBar extends StatelessWidget {
   final int currentIndex;
+  final bool highlightCenterAdd;
+  final Color backgroundColor;
+  final Color activeColor;
+  final Color inactiveColor;
 
-  const _BottomNavBar({required this.currentIndex});
+  const _BottomNavBar({
+    required this.currentIndex,
+    required this.highlightCenterAdd,
+    required this.backgroundColor,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -307,8 +342,6 @@ class _BottomNavBar extends StatelessWidget {
     const centerButtonWidth = 58.5;
     const centerButtonHeight = 60.0;
     const centerButtonBorder = 2.0;
-    const activeColor = Colors.black;
-    const inactiveColor = Color(0xFFCFCFCF);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -337,9 +370,9 @@ class _BottomNavBar extends StatelessWidget {
                     bottom: bottomInset,
                     top: barTopPadding,
                   ),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    boxShadow: const [
                       BoxShadow(
                         color: Color(0x11000000),
                         blurRadius: 12,
@@ -351,7 +384,7 @@ class _BottomNavBar extends StatelessWidget {
                     children: [
                       _NavItem(
                         width: itemWidth,
-                        label: 'Home',
+                        label: 'Home'.tr,
                         icon: Icons.home,
                         isActive: currentIndex == 0,
                         onTap: () => _goTo(AppRoutes.home, 0),
@@ -362,7 +395,7 @@ class _BottomNavBar extends StatelessWidget {
                       ),
                       _NavItem(
                         width: itemWidth,
-                        label: 'Food Log',
+                        label: 'Food Log'.tr,
                         icon: Icons.restaurant_menu,
                         isActive: currentIndex == 1,
                         onTap: () => _goTo(AppRoutes.foodLog, 1),
@@ -373,7 +406,7 @@ class _BottomNavBar extends StatelessWidget {
                       ),
                       _NavItem(
                         width: itemWidth,
-                        label: 'Challenges',
+                        label: 'Challenges'.tr,
                         icon: Icons.fitness_center,
                         isActive: currentIndex == 2,
                         onTap: () => _goTo(AppRoutes.challenges, 2),
@@ -385,7 +418,7 @@ class _BottomNavBar extends StatelessWidget {
                       SizedBox(width: centerButtonWidth),
                       _NavItem(
                         width: itemWidth,
-                        label: 'Leaderboard',
+                        label: 'Leaderboard'.tr,
                         icon: Icons.bar_chart,
                         isActive: currentIndex == 3,
                         onTap: () => _goTo(AppRoutes.leaderboard, 3),
@@ -396,7 +429,7 @@ class _BottomNavBar extends StatelessWidget {
                       ),
                       _NavItem(
                         width: itemWidth,
-                        label: 'Guides',
+                        label: 'Guides'.tr,
                         icon: Icons.menu_book,
                         isActive: currentIndex == 4,
                         onTap: () => _goTo(AppRoutes.guides, 4),
@@ -407,7 +440,7 @@ class _BottomNavBar extends StatelessWidget {
                       ),
                       _NavItem(
                         width: itemWidth,
-                        label: 'Settings',
+                        label: 'Settings'.tr,
                         icon: Icons.settings,
                         isActive: currentIndex == 5,
                         onTap: () => _goTo(AppRoutes.settings, 5),
@@ -422,16 +455,18 @@ class _BottomNavBar extends StatelessWidget {
                 Positioned(
                   top: 0,
                   child: InkWell(
-                    onTap: () => Get.toNamed(AppRoutes.addAction),
+                    onTap: _onCenterAddTap,
                     borderRadius: BorderRadius.circular(centerButtonHeight / 2),
                     child: Container(
                       width: centerButtonWidth,
                       height: centerButtonHeight,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: backgroundColor,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFFE6E6E6),
+                          color: highlightCenterAdd
+                              ? const Color(0xFFE84C64)
+                              : const Color(0xFFE6E6E6),
                           width: centerButtonBorder,
                         ),
                       ),
@@ -450,6 +485,17 @@ class _BottomNavBar extends StatelessWidget {
   void _goTo(String route, int index) {
     if (currentIndex == index) return;
     Get.offNamed(route);
+  }
+
+  void _onCenterAddTap() {
+    final route = Get.currentRoute;
+    if (route == AppRoutes.profile) {
+      Get.toNamed(AppRoutes.addAction);
+      return;
+    }
+
+    if (route == AppRoutes.reelsHome) return;
+    Get.toNamed(AppRoutes.reelsHome);
   }
 }
 

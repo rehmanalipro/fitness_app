@@ -19,10 +19,26 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String? _signupEmail;
 
   bool _obscurePassword = true;
   bool rememberPassword = false;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSignupEmail();
+  }
+
+  Future<void> _loadSignupEmail() async {
+    final signupEmail = await _authService.getSignupEmail();
+    if (!mounted) return;
+    setState(() => _signupEmail = signupEmail?.trim());
+    if ((_signupEmail ?? '').isNotEmpty) {
+      emailController.text = _signupEmail!;
+    }
+  }
 
   @override
   void dispose() {
@@ -34,10 +50,23 @@ class _LoginScreenState extends State<LoginScreen> {
   // ================= LOCAL LOGIN =================
   Future<void> _loginUser() async {
     if (!_formKey.currentState!.validate()) return;
+    final email = emailController.text.trim();
+    final expectedEmail = (_signupEmail ?? '').trim();
+    if (expectedEmail.isNotEmpty &&
+        email.toLowerCase() != expectedEmail.toLowerCase()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Please login with the same email used during signup".tr,
+          ),
+        ),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
     final result = await _authService.login(
-      email: emailController.text,
+      email: email,
       password: passwordController.text,
     );
     if (!mounted) return;
@@ -68,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    "Welcome Back",
+                    "Welcome Back".tr,
                     style: TextStyle(
                       fontSize: isDesktop ? 26 : 28,
                       fontWeight: FontWeight.bold,
@@ -97,15 +126,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-                    const Text("Remember password"),
+                    Text("Remember password".tr),
                     const Spacer(),
                     GestureDetector(
                       onTap: () {
                         Get.toNamed(AppRoutes.forgotPassword);
                       },
-                      child: const Text(
-                        "Forgot Password?",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        "Forgot Password?".tr,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -126,13 +155,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onPressed: _loading ? null : _loginUser,
                     child: _loading
-                        ? const LoadingDotsText(
-                            label: "Signing in",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                        ? LoadingDotsText(
+                            label: "Signing in".tr,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           )
-                        : const Text(
-                            "Continue",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                        : Text(
+                            "Continue".tr,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           ),
                   ),
                 ),
@@ -140,13 +175,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 Row(
-                  children: const [
-                    Expanded(child: Divider()),
+                  children: [
+                    const Expanded(child: Divider()),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text("Or With"),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text("Or With".tr),
                     ),
-                    Expanded(child: Divider()),
+                    const Expanded(child: Divider()),
                   ],
                 ),
 
@@ -166,14 +201,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("If you do not have account "),
+                    Text("If you do not have account ".tr),
                     GestureDetector(
                       onTap: () {
                         Get.offNamed(AppRoutes.createAccount);
                       },
-                      child: const Text(
-                        "Sign up",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        "Sign up".tr,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -208,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
           return null;
         },
         decoration: InputDecoration(
-          hintText: hint,
+          hintText: hint.tr,
           filled: true,
           fillColor: Colors.grey.shade100,
           border: OutlineInputBorder(

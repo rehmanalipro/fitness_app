@@ -15,17 +15,20 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Confirm Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          title: Text('Confirm Logout'.tr),
+          content: Text('Are you sure you want to logout?'.tr),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('No'),
+              child: Text('No'.tr),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Yes', style: TextStyle(color: Colors.white)),
+              child: Text(
+                'Yes'.tr,
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -147,7 +150,7 @@ class _SettingsActionTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    label,
+                    label.tr,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,

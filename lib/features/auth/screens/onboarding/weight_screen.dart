@@ -5,7 +5,7 @@ import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/primary_next_button.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 import 'package:fitness_app/core/widgets/unit_toggle.dart';
-import 'package:fitness_app/features/auth/services/onboarding_service.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
 
 class WeightScreen extends StatefulWidget {
   const WeightScreen({super.key});
@@ -15,7 +15,7 @@ class WeightScreen extends StatefulWidget {
 }
 
 class _WeightScreenState extends State<WeightScreen> {
-  final OnboardingService _onboardingService = OnboardingService();
+  final AuthService _authService = AuthService();
   bool _isKg = true;
   int _selectedIndex = 20;
   bool _saving = false;
@@ -49,9 +49,30 @@ class _WeightScreenState extends State<WeightScreen> {
     OnboardingData.instance.weightValue = weightValue;
     OnboardingData.instance.weightUnit = unit;
 
-    final result = await _onboardingService.saveStep(
-      step: 'weight',
-      data: OnboardingData.instance.toMap(),
+    final signupData = await _authService.getPendingSignupData();
+    final name = (signupData['name'] ?? '').trim();
+    final email = (signupData['email'] ?? '').trim();
+    final password = (signupData['password'] ?? '').trim();
+    final phone = (signupData['phone'] ?? '').trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Signup data missing. Please create account again.'),
+        ),
+      );
+      Get.offAllNamed(AppRoutes.createAccount);
+      return;
+    }
+
+    final result = await _authService.register(
+      name: name,
+      email: email,
+      password: password,
+      phone: phone.isEmpty ? null : phone,
+      onboardingData: OnboardingData.instance.toRegistrationApiMap(),
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -60,7 +81,8 @@ class _WeightScreenState extends State<WeightScreen> {
       context,
     ).showSnackBar(SnackBar(content: Text(result.message)));
     if (result.success) {
-      Get.toNamed(AppRoutes.login);
+      await _authService.clearPendingSignupData();
+      Get.offAllNamed(AppRoutes.login);
     }
   }
 

@@ -51,7 +51,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
     if (newPassword != confirmPassword) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      ).showSnackBar(SnackBar(content: Text('Passwords do not match'.tr)));
       return;
     }
 
@@ -98,17 +98,20 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
                   onPressed: () => Get.back(),
                 ),
                 const SizedBox(height: 12),
-                const Center(
+                Center(
                   child: Text(
-                    'Set New Password',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    'Set New Password'.tr,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Center(
+                Center(
                   child: Text(
-                    'Enter your new password and confirm it.',
-                    style: TextStyle(color: Colors.grey),
+                    'Enter your new password and confirm it.'.tr,
+                    style: const TextStyle(color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -138,12 +141,15 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
                     ),
                     onPressed: _loading ? null : _submit,
                     child: _loading
-                        ? const LoadingDotsText(
-                            label: 'Updating',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                        ? LoadingDotsText(
+                            label: 'Updating'.tr,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           )
-                        : const Text(
-                            'Continue',
+                        : Text(
+                            'Continue'.tr,
                             style: TextStyle(color: Colors.white, fontSize: 16),
                           ),
                   ),
@@ -172,7 +178,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
         return null;
       },
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: hint.tr,
         filled: true,
         fillColor: Colors.grey.shade100,
         border: OutlineInputBorder(

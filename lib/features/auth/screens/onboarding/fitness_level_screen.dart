@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
-import 'package:fitness_app/features/auth/services/onboarding_service.dart';
+import 'package:fitness_app/features/settings/services/fitness_level_service.dart';
 
 class FitnessLevelScreen extends StatefulWidget {
   const FitnessLevelScreen({super.key});
@@ -13,29 +13,33 @@ class FitnessLevelScreen extends StatefulWidget {
 }
 
 class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
-  final OnboardingService _onboardingService = OnboardingService();
+  final FitnessLevelService _fitnessLevelService = FitnessLevelService();
   String? selectedLevel;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedLevel = OnboardingData.instance.fitnessLevel;
+    _hydrateSavedLevel();
+  }
+
+  Future<void> _hydrateSavedLevel() async {
+    final saved = await _fitnessLevelService.getSavedLevel();
+    if (!mounted) return;
+    if (selectedLevel == null || selectedLevel!.trim().isEmpty) {
+      setState(() => selectedLevel = saved);
+    }
+  }
 
   Future<void> _saveAndContinue() async {
     if (selectedLevel == null || _saving) return;
 
     setState(() => _saving = true);
     OnboardingData.instance.fitnessLevel = selectedLevel;
-
-    final result = await _onboardingService.saveStep(
-      step: 'fitness-level',
-      data: OnboardingData.instance.toMap(),
-    );
-    if (!mounted) return;
+    await _fitnessLevelService.saveLevel(selectedLevel!);
     setState(() => _saving = false);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.message)));
-    if (result.success) {
-      Get.toNamed(AppRoutes.age);
-    }
+    Get.toNamed(AppRoutes.age);
   }
 
   @override
@@ -84,7 +88,7 @@ class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
 
               // Beginner
               _levelButton(
-                title: "Begginer",
+                title: "Beginner",
                 isSelected: selectedLevel == "Beginner",
                 onTap: () {
                   setState(() {
@@ -133,24 +137,11 @@ class _FitnessLevelScreenState extends State<FitnessLevelScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: selectedLevel == null || _saving
-                      ? null
-                      : _saveAndContinue,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Text(
-                          "Next",
-                          style: TextStyle(color: Colors.white),
-                        ),
+                  onPressed: _saveAndContinue,
+                  child: const Text(
+                    "Next",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],

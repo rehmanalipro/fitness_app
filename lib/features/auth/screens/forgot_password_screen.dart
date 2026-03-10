@@ -69,19 +69,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 const SizedBox(height: 16),
 
-                const Center(
+                Center(
                   child: Text(
-                    "Forgot Password",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    "Forgot Password".tr,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 12),
 
-                const Center(
+                Center(
                   child: Text(
-                    "Enter your email address to receive an OTP code.",
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    "Enter your email address to receive an OTP code.".tr,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -109,12 +112,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     onPressed: _loading ? null : _sendOtp,
                     child: _loading
-                        ? const LoadingDotsText(
-                            label: "Sending",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                        ? LoadingDotsText(
+                            label: "Sending".tr,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           )
-                        : const Text(
-                            "Continue",
+                        : Text(
+                            "Continue".tr,
                             style: TextStyle(color: Colors.white, fontSize: 16),
                           ),
                   ),
@@ -127,9 +133,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onTap: () {
                       Get.back();
                     },
-                    child: const Text(
-                      "Remember password? Back to Log in",
-                      style: TextStyle(
+                    child: Text(
+                      "Remember password? Back to Log in".tr,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -162,7 +168,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return null;
       },
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: hint.tr,
         filled: true,
         fillColor: Colors.grey.shade100,
         border: OutlineInputBorder(

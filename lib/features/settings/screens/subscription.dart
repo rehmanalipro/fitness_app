@@ -4,6 +4,7 @@ import 'package:fitness_app/routes/app_routes.dart';
 
 import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/features/settings/screens/subscription_plan.dart';
+import 'package:fitness_app/features/settings/services/subscription_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -14,6 +15,8 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool isBasicSelected = true;
+  bool _isSubmitting = false;
+  final SubscriptionService _subscriptionService = SubscriptionService();
 
   final List<String> _basicIncluded = const [
     '3 Beginner-Level Challenges Per Day',
@@ -51,6 +54,39 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     'Motivational Alerts & Reminders',
   ];
 
+  Future<bool> _saveSelectedPlan(
+    String planName, {
+    required bool premium,
+  }) async {
+    if (_isSubmitting) return false;
+    setState(() => _isSubmitting = true);
+    final result = await _subscriptionService.selectPlan(
+      planName: planName,
+      isPremium: premium,
+    );
+    if (!mounted) return false;
+    setState(() => _isSubmitting = false);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.message)));
+    return result.success;
+  }
+
+  Future<void> _onPrimaryTap() async {
+    if (_isSubmitting) return;
+    if (isBasicSelected) {
+      showDialog(
+        context: context,
+        builder: (_) => PremiumPlansDialog(
+          onPlanSelected: (planName) =>
+              _saveSelectedPlan(planName, premium: true),
+        ),
+      );
+      return;
+    }
+    Get.toNamed(AppRoutes.subscriptionOptions);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -85,17 +121,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
                 const SizedBox(height: 12),
                 SubscriptionPrimaryButton(
-                  label: isBasicSelected ? 'Switch to Premium' : 'Continue',
-                  onTap: () {
-                    if (isBasicSelected) {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const PremiumPlansDialog(),
-                      );
-                      return;
-                    }
-                    Get.toNamed(AppRoutes.subscriptionOptions);
-                  },
+                  label: _isSubmitting
+                      ? 'Please wait...'
+                      : (isBasicSelected ? 'Switch to Premium' : 'Continue'),
+                  onTap: _onPrimaryTap,
                 ),
               ],
             ),

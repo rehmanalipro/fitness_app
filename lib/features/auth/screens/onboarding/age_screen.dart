@@ -4,7 +4,6 @@ import 'package:fitness_app/core/constants/onboarding_data.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/primary_next_button.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
-import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class AgeScreen extends StatefulWidget {
   const AgeScreen({super.key});
@@ -14,7 +13,6 @@ class AgeScreen extends StatefulWidget {
 }
 
 class _AgeScreenState extends State<AgeScreen> {
-  final OnboardingService _onboardingService = OnboardingService();
   final List<int> years = List.generate(30, (i) => 1996 + i);
   late final FixedExtentScrollController _controller;
   int _selectedIndex = 10;
@@ -42,20 +40,8 @@ class _AgeScreenState extends State<AgeScreen> {
     setState(() => _saving = true);
     OnboardingData.instance.birthYear = selectedYear;
     OnboardingData.instance.age = selectedAge;
-
-    final result = await _onboardingService.saveStep(
-      step: 'age',
-      data: OnboardingData.instance.toMap(),
-    );
-    if (!mounted) return;
     setState(() => _saving = false);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.message)));
-    if (result.success) {
-      Get.toNamed(AppRoutes.height);
-    }
+    Get.toNamed(AppRoutes.height);
   }
 
   @override

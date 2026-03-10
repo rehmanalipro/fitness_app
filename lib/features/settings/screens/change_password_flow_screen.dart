@@ -28,9 +28,9 @@ class _ChangePasswordFlowScreenState extends State<ChangePasswordFlowScreen> {
   Future<void> _sendCode() async {
     final email = emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid email')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Enter a valid email'.tr)));
       return;
     }
 
@@ -65,17 +65,18 @@ class _ChangePasswordFlowScreenState extends State<ChangePasswordFlowScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Enter your email address to receive\n'
-              'a password reset link.',
+                      'a password reset link.'
+                  .tr,
             ),
             const SizedBox(height: 20),
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                hintText: 'Email',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: 'Email'.tr,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
@@ -86,7 +87,7 @@ class _ChangePasswordFlowScreenState extends State<ChangePasswordFlowScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 onPressed: _loading ? null : _sendCode,
                 child: Text(
-                  _loading ? 'Sending...' : 'Send Code',
+                  _loading ? 'Sending...'.tr : 'Send Code'.tr,
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -95,13 +96,13 @@ class _ChangePasswordFlowScreenState extends State<ChangePasswordFlowScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Remember password? ',
+                Text(
+                  'Remember password? '.tr,
                   style: TextStyle(color: Colors.grey),
                 ),
                 TextButton(
                   onPressed: () => Get.offAllNamed(AppRoutes.login),
-                  child: const Text('Back to Log In'),
+                  child: Text('Back to Log In'.tr),
                 ),
               ],
             ),

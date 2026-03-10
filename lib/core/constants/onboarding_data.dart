@@ -27,6 +27,56 @@ class OnboardingData {
     };
   }
 
+  Map<String, dynamic> toRegistrationApiMap() {
+    final map = <String, dynamic>{};
+
+    if (gender != null && gender!.trim().isNotEmpty) {
+      map['gender'] = gender!.trim().toLowerCase();
+    }
+
+    if (goal != null && goal!.trim().isNotEmpty) {
+      final normalizedGoal = goal!.trim().toLowerCase();
+      if (normalizedGoal == 'lose fat') {
+        map['goal'] = 'lose_fat';
+      } else if (normalizedGoal == 'stay fit') {
+        map['goal'] = 'stay_fit';
+      } else if (normalizedGoal == 'build muscle') {
+        map['goal'] = 'build_muscle';
+      } else {
+        map['goal'] = normalizedGoal.replaceAll(' ', '_');
+      }
+    }
+
+    if (fitnessLevel != null && fitnessLevel!.trim().isNotEmpty) {
+      map['fitness_level'] = fitnessLevel!.trim().toLowerCase();
+    }
+
+    if (birthYear != null) {
+      map['birth_year'] = birthYear;
+    }
+
+    if (heightValue != null) {
+      final unit = (heightUnit ?? '').toLowerCase();
+      if (unit == 'cm') {
+        map['height_cm'] = heightValue;
+      } else if (unit == 'in') {
+        map['height_cm'] = ((heightValue as num) * 2.54).round();
+      }
+    }
+
+    if (weightValue != null) {
+      final unit = (weightUnit ?? '').toLowerCase();
+      if (unit == 'kg') {
+        map['weight_kg'] = weightValue;
+      } else if (unit == 'lb') {
+        map['weight_kg'] = ((weightValue as num) * 0.453592).round();
+      }
+    }
+
+    map['is_ready'] = true;
+    return map;
+  }
+
   void clear() {
     gender = null;
     goal = null;

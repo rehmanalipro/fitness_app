@@ -22,8 +22,7 @@ class SuccessScreen extends StatelessWidget {
   String get _description {
     switch (purpose) {
       case SuccessPurpose.registration:
-        return "Your account is awaiting admin approval.\n"
-            "You will be notified once activated.";
+        return "Congratulations! Your account setup is complete.";
       case SuccessPurpose.passwordUpdated:
         return "Your password has been updated successfully.";
     }
@@ -32,7 +31,7 @@ class SuccessScreen extends StatelessWidget {
   String get _nextRoute {
     switch (purpose) {
       case SuccessPurpose.registration:
-        return AppRoutes.onboardingReady;
+        return AppRoutes.login;
       case SuccessPurpose.passwordUpdated:
         return AppRoutes.login;
     }

@@ -5,7 +5,6 @@ import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/core/widgets/primary_next_button.dart';
 import 'package:fitness_app/core/widgets/responsive_page.dart';
 import 'package:fitness_app/core/widgets/unit_toggle.dart';
-import 'package:fitness_app/features/auth/services/onboarding_service.dart';
 
 class HeightScreen extends StatefulWidget {
   const HeightScreen({super.key});
@@ -15,7 +14,6 @@ class HeightScreen extends StatefulWidget {
 }
 
 class _HeightScreenState extends State<HeightScreen> {
-  final OnboardingService _onboardingService = OnboardingService();
   bool _isCm = false;
   int _selectedIndex = 8;
   bool _saving = false;
@@ -58,20 +56,8 @@ class _HeightScreenState extends State<HeightScreen> {
     setState(() => _saving = true);
     OnboardingData.instance.heightValue = heightValue;
     OnboardingData.instance.heightUnit = unit;
-
-    final result = await _onboardingService.saveStep(
-      step: 'height',
-      data: OnboardingData.instance.toMap(),
-    );
-    if (!mounted) return;
     setState(() => _saving = false);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.message)));
-    if (result.success) {
-      Get.toNamed(AppRoutes.weight);
-    }
+    Get.toNamed(AppRoutes.weight);
   }
 
   @override

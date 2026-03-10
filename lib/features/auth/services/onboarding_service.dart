@@ -9,8 +9,13 @@ import 'package:fitness_app/features/auth/services/auth_service.dart';
 class OnboardingResult {
   final bool success;
   final String message;
+  final String? token;
 
-  const OnboardingResult({required this.success, required this.message});
+  const OnboardingResult({
+    required this.success,
+    required this.message,
+    this.token,
+  });
 }
 
 class OnboardingService {
@@ -23,7 +28,10 @@ class OnboardingService {
     try {
       final token = await _authService.getToken();
       final email = await _authService.getEmail();
-      final headers = <String, String>{'Content-Type': 'application/json'};
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -65,9 +73,29 @@ class OnboardingService {
           }
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
+            final responseSuccess = _extractSuccess(lastDecoded);
+            if (responseSuccess == false) {
+              return OnboardingResult(
+                success: false,
+                message:
+                    _extractMessage(lastDecoded) ??
+                    'Failed to save step ($step)',
+              );
+            }
+
+            final responseToken = _extractToken(lastDecoded);
+            final responseEmail = _extractEmail(lastDecoded);
+            if (responseToken != null && responseToken.trim().isNotEmpty) {
+              await _authService.saveToken(responseToken.trim());
+            }
+            if (responseEmail != null && responseEmail.trim().isNotEmpty) {
+              await _authService.saveEmail(responseEmail.trim());
+            }
+
             return OnboardingResult(
               success: true,
               message: _extractMessage(lastDecoded) ?? 'Saved successfully',
+              token: responseToken,
             );
           }
 
@@ -161,6 +189,41 @@ class OnboardingService {
       }
     }
 
+    return null;
+  }
+
+  bool? _extractSuccess(Map<String, dynamic> data) {
+    final success = data['success'];
+    if (success is bool) return success;
+    if (success is String) {
+      final normalized = success.trim().toLowerCase();
+      if (normalized == 'true') return true;
+      if (normalized == 'false') return false;
+    }
+    return null;
+  }
+
+  String? _extractToken(Map<String, dynamic> data) {
+    final direct = data['token'] ?? data['access_token'];
+    if (direct is String && direct.trim().isNotEmpty) return direct;
+
+    final payload = data['data'];
+    if (payload is Map<String, dynamic>) {
+      final nested = payload['token'] ?? payload['access_token'];
+      if (nested is String && nested.trim().isNotEmpty) return nested;
+    }
+    return null;
+  }
+
+  String? _extractEmail(Map<String, dynamic> data) {
+    final direct = data['email'];
+    if (direct is String && direct.trim().isNotEmpty) return direct;
+
+    final payload = data['data'];
+    if (payload is Map<String, dynamic>) {
+      final nested = payload['email'];
+      if (nested is String && nested.trim().isNotEmpty) return nested;
+    }
     return null;
   }
 

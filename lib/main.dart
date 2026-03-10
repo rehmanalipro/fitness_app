@@ -1,34 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:fitness_app/core/localization/app_language.dart';
+import 'package:fitness_app/core/localization/app_translations.dart';
 import 'routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
-  runApp(FunFitApp(savedThemeMode: savedThemeMode));
+  final savedLocale = await AppLanguage.loadSavedLocale();
+  runApp(FunFitApp(savedThemeMode: savedThemeMode, savedLocale: savedLocale));
 }
 
 class FunFitApp extends StatelessWidget {
   final AdaptiveThemeMode? savedThemeMode;
+  final Locale savedLocale;
 
-  const FunFitApp({super.key, this.savedThemeMode});
+  const FunFitApp({super.key, this.savedThemeMode, required this.savedLocale});
 
   @override
   Widget build(BuildContext context) {
     return AdaptiveTheme(
-      light: ThemeData(
+      light: ThemeData.from(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1E3EBE),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
-        brightness: Brightness.light,
-        primaryColor: const Color(0xFF1E3EBE),
-        scaffoldBackgroundColor: Colors.white,
       ),
-      dark: ThemeData(
+      dark: ThemeData.from(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1E3EBE),
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
-        brightness: Brightness.dark,
-        primaryColor: const Color(0xFF1E3EBE),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-      ),
+      ).copyWith(scaffoldBackgroundColor: const Color(0xFF121212)),
       initial: savedThemeMode ?? AdaptiveThemeMode.light,
       builder: (theme, darkTheme) => GetMaterialApp(
         debugShowCheckedModeBanner: false,
@@ -41,6 +48,15 @@ class FunFitApp extends StatelessWidget {
         unknownRoute: AppRoutes.unknownRoute,
         theme: theme,
         darkTheme: darkTheme,
+        locale: savedLocale,
+        fallbackLocale: const Locale(AppLanguage.englishCode),
+        supportedLocales: AppLanguage.supportedLocales,
+        translations: AppTranslations(),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
       ),
     );
   }

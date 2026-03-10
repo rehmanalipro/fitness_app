@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:language_picker/languages.dart';
+import 'package:get/get.dart';
 
+import 'package:fitness_app/core/localization/app_language.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
 class LanguagePreferencesScreen extends StatefulWidget {
@@ -12,34 +13,22 @@ class LanguagePreferencesScreen extends StatefulWidget {
 }
 
 class _LanguagePreferencesScreenState extends State<LanguagePreferencesScreen> {
-  late final List<Language> _languages;
-  late Language _selectedLanguage;
+  late final List<_LanguageOption> _languages;
+  late _LanguageOption _selectedLanguage;
 
   @override
   void initState() {
     super.initState();
     _languages = [
-      Languages.arabic,
-      Languages.bengali,
-      Languages.english,
-      Languages.french,
-      Languages.german,
-      Languages.hindi,
-      Languages.italian,
-      Languages.japanese,
-      Languages.javanese,
-      Languages.korean,
-      Languages.marathi,
-      Languages.portuguese,
-      Languages.russian,
-      Languages.spanish,
-      Languages.swahili,
-      Languages.tamil,
-      Languages.telugu,
-      Languages.turkish,
-      Languages.urdu,
+      const _LanguageOption(name: 'English', isoCode: AppLanguage.englishCode),
+      const _LanguageOption(name: 'Arabic', isoCode: AppLanguage.arabicCode),
+      const _LanguageOption(name: 'Urdu', isoCode: AppLanguage.urduCode),
     ];
-    _selectedLanguage = Languages.english;
+    final currentCode = Get.locale?.languageCode ?? AppLanguage.englishCode;
+    _selectedLanguage = _languages.firstWhere(
+      (e) => e.isoCode == currentCode,
+      orElse: () => _languages.first,
+    );
   }
 
   @override
@@ -78,10 +67,10 @@ class _LanguagePreferencesScreenState extends State<LanguagePreferencesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    _selectedLanguage == Languages.english
-                        ? 'Select Language'
+                    _selectedLanguage.isoCode == AppLanguage.englishCode
+                        ? 'Select Language'.tr
                         : _selectedLanguage.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -98,7 +87,7 @@ class _LanguagePreferencesScreenState extends State<LanguagePreferencesScreen> {
   }
 
   Future<void> _openLanguageList(BuildContext context) async {
-    final selected = await showModalBottomSheet<Language>(
+    final selected = await showModalBottomSheet<_LanguageOption>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -134,6 +123,8 @@ class _LanguagePreferencesScreenState extends State<LanguagePreferencesScreen> {
     );
 
     if (selected == null) return;
+    await AppLanguage.changeLocale(selected.isoCode);
+    if (!mounted) return;
     setState(() => _selectedLanguage = selected);
   }
 
@@ -171,4 +162,11 @@ class _LanguagePreferencesScreenState extends State<LanguagePreferencesScreen> {
     final second = upper.codeUnitAt(1) + 127397;
     return String.fromCharCode(first) + String.fromCharCode(second);
   }
+}
+
+class _LanguageOption {
+  final String name;
+  final String isoCode;
+
+  const _LanguageOption({required this.name, required this.isoCode});
 }

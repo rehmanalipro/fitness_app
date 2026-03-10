@@ -1,9 +1,107 @@
 import 'package:flutter/material.dart';
 
+import 'package:fitness_app/features/home/services/app_api_service.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  final AppApiService _apiService = AppApiService();
+  bool _isLoading = true;
+  bool _isBusy = false;
+  int _unreadCount = 0;
+  String? _error;
+  List<Map<String, dynamic>> _items = <Map<String, dynamic>>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        _apiService.getNotifications(),
+        _apiService.getUnreadNotificationsCount(),
+      ]);
+
+      final listResult = results[0];
+      final unreadResult = results[1];
+
+      if (listResult['ok'] != true) {
+        setState(() {
+          _error = 'Notifications load failed (${listResult['statusCode']})';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final notificationData = _extractData(listResult['data']);
+      final unreadData = _extractData(unreadResult['data']);
+
+      final rawList =
+          notificationData['notifications'] ?? notificationData['items'];
+      final list = rawList is List ? rawList : <dynamic>[];
+
+      final countValue = unreadData['unread_count'] ?? unreadData['count'] ?? 0;
+      final unreadCount = countValue is num
+          ? countValue.toInt()
+          : int.tryParse(countValue.toString()) ?? 0;
+
+      setState(() {
+        _items = list
+            .whereType<Map>()
+            .map((e) {
+              return e.map((key, value) => MapEntry(key.toString(), value));
+            })
+            .toList(growable: false);
+        _unreadCount = unreadCount;
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _error = 'Unable to connect to server';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    setState(() => _isBusy = true);
+    try {
+      await _apiService.markAllNotificationsAsRead();
+      await _loadNotifications();
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _markOneRead(String id) async {
+    setState(() => _isBusy = true);
+    try {
+      await _apiService.markNotificationAsRead(id);
+      await _loadNotifications();
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Map<String, dynamic> _extractData(dynamic raw) {
+    if (raw is! Map<String, dynamic>) return <String, dynamic>{};
+    final nested = raw['data'];
+    if (nested is Map<String, dynamic>) return nested;
+    return raw;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,182 +111,130 @@ class NotificationsScreen extends StatelessWidget {
       showBackButton: true,
       showBottomNav: false,
       currentIndex: 0,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final cardWidth = constraints.maxWidth < 440
-              ? constraints.maxWidth - 18
-              : 440.0;
-
-          return ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: Container(
-              width: double.infinity,
-              color: const Color(0xFFF5F5F5),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(9, 20, 9, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'All',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+      body: Container(
+        width: double.infinity,
+        color: const Color(0xFFF5F5F5),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadNotifications,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 20),
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'All',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        CircleAvatar(
+                          radius: 9,
+                          backgroundColor: const Color(0xFFE9EDF3),
+                          child: Text(
+                            '$_unreadCount',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF6A7588),
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 14,
-                            height: 14,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFE9EDF3),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Text(
-                              '1',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Color(0xFF6A7588),
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          const Text(
-                            'Mark all as read',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.settings_outlined, size: 20),
-                        ],
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: _isBusy ? null : _markAllRead,
+                          child: const Text('Mark all as read'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (_items.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: Text('No notifications found')),
                       ),
-                      const SizedBox(height: 22),
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: Container(
-                          width: cardWidth,
-                          height: 155,
-                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFD9DEE5)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: const [
-                                  Icon(
-                                    Icons.circle,
-                                    size: 7,
-                                    color: Colors.black,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Invitation',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                    ..._items.map((item) {
+                      final id = (item['id'] ?? '').toString();
+                      final title =
+                          (item['title'] ?? item['type'] ?? 'Notification')
+                              .toString();
+                      final body = (item['body'] ?? item['message'] ?? '-')
+                          .toString();
+                      final createdAt = (item['created_at'] ?? '').toString();
+                      final isRead =
+                          item['read'] == true || item['is_read'] == true;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFD9DEE5)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                if (!isRead)
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 6),
+                                    child: Icon(
+                                      Icons.circle,
+                                      size: 8,
+                                      color: Colors.black,
                                     ),
                                   ),
-                                  Spacer(),
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                if (createdAt.isNotEmpty)
                                   Text(
-                                    '8h',
-                                    style: TextStyle(
+                                    createdAt,
+                                    style: const TextStyle(
                                       fontSize: 11,
                                       color: Color(0xFF8B92A1),
                                     ),
                                   ),
-                                  SizedBox(width: 6),
-                                  Icon(
-                                    Icons.more_horiz,
-                                    size: 18,
-                                    color: Color(0xFF8B92A1),
-                                  ),
-                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              body,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF556074),
                               ),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: 1,
-                                height: 40,
-                                color: const Color(0xFFD9DEE5),
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: (_isBusy || isRead || id.isEmpty)
+                                    ? null
+                                    : () => _markOneRead(id),
+                                child: Text(isRead ? 'Read' : 'Mark as read'),
                               ),
-                              Transform.translate(
-                                offset: const Offset(10, -37),
-                                child: const Text(
-                                  'Angelina invite you to join "Body Weight"\nroom',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF556074),
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 155,
-                                    height: 32,
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                      onPressed: () {},
-                                      child: const Text(
-                                        'Accept',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  SizedBox(
-                                    width: 155,
-                                    height: 32,
-                                    child: OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        side: const BorderSide(
-                                          color: Color(0xFFD9DEE5),
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                      onPressed: () {},
-                                      child: const Text(
-                                        'Decline',
-                                        style: TextStyle(color: Colors.black87),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
+                      );
+                    }),
+                  ],
                 ),
               ),
-            ),
-          );
-        },
       ),
     );
   }

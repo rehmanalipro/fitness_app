@@ -1,10 +1,12 @@
 import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
+import 'package:fitness_app/features/home/screens/media_viewer_screen.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -24,9 +26,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileController = Get.isRegistered<HomeProfileController>()
         ? Get.find<HomeProfileController>()
         : Get.put(HomeProfileController(), permanent: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _profileController.loadProfileFromApi();
+    });
   }
 
   Future<void> _openEditProfileSheet() async {
+    if (!mounted) return;
+
     final nameCtrl = TextEditingController(
       text: _profileController.displayName.value,
     );
@@ -35,11 +42,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     final bioCtrl = TextEditingController(text: _profileController.bio.value);
     Uint8List? selectedAvatar;
+    String? selectedAvatarPath;
 
-    await showModalBottomSheet<void>(
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Padding(
@@ -72,7 +80,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           );
                           if (picked == null) return;
                           final bytes = await picked.readAsBytes();
-                          setSheetState(() => selectedAvatar = bytes);
+                          setSheetState(() {
+                            selectedAvatar = bytes;
+                            selectedAvatarPath = picked.path;
+                          });
                         },
                         child: CircleAvatar(
                           radius: 42,
@@ -117,13 +128,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           backgroundColor: Colors.black,
                         ),
                         onPressed: () {
-                          _profileController.setProfile(
-                            name: nameCtrl.text,
-                            username: userCtrl.text,
-                            userBio: bioCtrl.text,
-                            avatar: selectedAvatar,
-                          );
-                          Get.back();
+                          if (Navigator.of(sheetContext).canPop()) {
+                            Navigator.of(sheetContext).pop({
+                              'name': nameCtrl.text,
+                              'username': userCtrl.text,
+                              'bio': bioCtrl.text,
+                              'avatar': selectedAvatar,
+                              'avatarPath': selectedAvatarPath,
+                            });
+                          }
                         },
                         child: const Text(
                           'Save',
@@ -139,6 +152,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+
+    if (!mounted) return;
+    if (result != null) {
+      final name = (result['name'] ?? '').toString();
+      final username = (result['username'] ?? '').toString();
+      final userBio = (result['bio'] ?? '').toString();
+      final avatarPath = (result['avatarPath'] ?? '').toString();
+
+      if (avatarPath.isNotEmpty) {
+        await _profileController.uploadAvatarToApi(avatarPath);
+        await _profileController.loadProfileFromApi(force: true);
+      }
+
+      final saved = await _profileController.saveProfileToApi(
+        name: name,
+        username: username,
+        userBio: userBio,
+      );
+      if (!saved && mounted) {
+        Get.snackbar(
+          'Profile',
+          _profileController.syncError.value ?? 'Profile save failed',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    }
 
     nameCtrl.dispose();
     userCtrl.dispose();
@@ -237,6 +276,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     itemBuilder: (context, index) {
                       final media = items[index];
                       return GestureDetector(
+                        onTap: () =>
+                            Get.to(() => MediaViewerScreen(media: media)),
                         onDoubleTap: () =>
                             _profileController.toggleLike(media.id),
                         child: Stack(
@@ -244,9 +285,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             if (media.bytes != null)
                               Image.memory(media.bytes!, fit: BoxFit.cover)
+                            else if (media.isVideo)
+                              Container(
+                                color: Colors.black87,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.play_circle_fill,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              )
+                            else if ((media.localPath ?? '').isNotEmpty)
+                              Image.file(
+                                File(media.localPath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      color: const Color(0xFFE8E8E8),
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                      ),
+                                    ),
+                              )
                             else
                               Image.network(
-                                media.imageUrl ?? '',
+                                media.imageUrl ?? media.mediaUrl ?? '',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Container(
@@ -273,6 +337,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
+                            if (media.caption.trim().isNotEmpty)
+                              Positioned(
+                                left: 6,
+                                right: 6,
+                                bottom: 6,
+                                child: Text(
+                                  media.caption,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black87,
+                                        blurRadius: 3,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       );
