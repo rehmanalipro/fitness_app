@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:fitness_app/core/widgets/fallback_network_image.dart';
-import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
+import 'package:fitness_app/features/home/services/app_api_service.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/features/home/widgets/guides/explore_group_chat_panel.dart';
+import 'package:fitness_app/features/home/widgets/user_profile_sheet.dart';
 
 class GuidesScreen extends StatefulWidget {
   const GuidesScreen({super.key});
@@ -22,6 +23,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
 
   final List<_ChatPost> _foodPosts = [
     _ChatPost(
+      authorName: 'Maude Hall',
+      authorHandle: '@maude.fit',
+      authorAvatarUrl: 'https://i.pravatar.cc/100?img=24',
       message:
           "Hey! My body weight is increasing. I'm gaining weight and want some suggestions.",
       timeAgo: '14 min',
@@ -29,6 +33,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
       replies: ['Start with a light calorie deficit and track protein daily.'],
     ),
     _ChatPost(
+      authorName: 'Chris Fox',
+      authorHandle: '@chris.fox',
+      authorAvatarUrl: 'https://i.pravatar.cc/100?img=12',
       message:
           'I completed 8k steps and full-body workout today. Any post-workout meal ideas?',
       timeAgo: '9 min',
@@ -36,6 +43,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
       replies: ['Great work. Try eggs + toast + fruit for recovery.'],
     ),
     _ChatPost(
+      authorName: 'Sara Ahmed',
+      authorHandle: '@sara.health',
+      authorAvatarUrl: 'https://i.pravatar.cc/100?img=47',
       message:
           'New update: I reduced sugar drinks this week and feel better already.',
       timeAgo: '3 min',
@@ -46,14 +56,10 @@ class _GuidesScreenState extends State<GuidesScreen> {
     ),
   ];
 
-  late final HomeProfileController _profileController;
 
   @override
   void initState() {
     super.initState();
-    _profileController = Get.isRegistered<HomeProfileController>()
-        ? Get.find<HomeProfileController>()
-        : Get.put(HomeProfileController(), permanent: true);
   }
 
   Future<void> _openReplyDialog(int index) async {
@@ -90,12 +96,22 @@ class _GuidesScreenState extends State<GuidesScreen> {
     setState(() {
       _foodPosts[index].replies.add(trimmed);
     });
+    // Send reply to backend
+    final postId = _foodPosts[index].id;
+    if (postId != null) {
+      AppApiService().replyGuidePost(postId, {'description': trimmed, 'message': trimmed}).catchError((_) {});
+    }
   }
 
   void _increaseLikes(int index) {
     setState(() {
       _foodPosts[index].likes += 1;
     });
+    // Send like to backend
+    final postId = _foodPosts[index].id;
+    if (postId != null) {
+      AppApiService().likeGuidePost(postId).catchError((_) {});
+    }
   }
 
   @override
@@ -164,7 +180,12 @@ class _GuidesScreenState extends State<GuidesScreen> {
                             ),
                           ],
                         )
-                      : SingleChildScrollView(
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            setState(() {}); // triggers rebuild with fresh local data
+                          },
+                          child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.only(
                             bottom: 24 + MediaQuery.of(context).padding.bottom,
                           ),
@@ -209,7 +230,6 @@ class _GuidesScreenState extends State<GuidesScreen> {
                                     });
                                     Get.toNamed(AppRoutes.chatChallenges);
                                   },
-                                  profileController: _profileController,
                                   posts: _foodPosts,
                                   onLikeTap: _increaseLikes,
                                   onReplyTap: _openReplyDialog,
@@ -222,6 +242,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
                                 ),
                             ],
                           ),
+                        ),
                         ),
                 ),
               ),
@@ -239,7 +260,6 @@ class _ChatSection extends StatelessWidget {
   final int chatFilterIndex;
   final VoidCallback onFoodTap;
   final VoidCallback onChallengeTap;
-  final HomeProfileController profileController;
   final List<_ChatPost> posts;
   final ValueChanged<int> onLikeTap;
   final ValueChanged<int> onReplyTap;
@@ -250,7 +270,6 @@ class _ChatSection extends StatelessWidget {
     required this.chatFilterIndex,
     required this.onFoodTap,
     required this.onChallengeTap,
-    required this.profileController,
     required this.posts,
     required this.onLikeTap,
     required this.onReplyTap,
@@ -291,7 +310,6 @@ class _ChatSection extends StatelessWidget {
                       child: _FoodPostCard(
                         index: index,
                         post: posts[index],
-                        profileController: profileController,
                         onLikeTap: () => onLikeTap(index),
                         onReplyTap: () => onReplyTap(index),
                       ),
@@ -309,14 +327,12 @@ class _ChatSection extends StatelessWidget {
 class _FoodPostCard extends StatelessWidget {
   final int index;
   final _ChatPost post;
-  final HomeProfileController profileController;
   final VoidCallback onLikeTap;
   final VoidCallback onReplyTap;
 
   const _FoodPostCard({
     required this.index,
     required this.post,
-    required this.profileController,
     required this.onLikeTap,
     required this.onReplyTap,
   });
@@ -334,47 +350,45 @@ class _FoodPostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Obx(
-                () => CircleAvatar(
+          GestureDetector(
+            onTap: () => showUserProfileSheet(
+              context,
+              userId: 'chat_${post.authorHandle}',
+              name: post.authorName,
+              handle: post.authorHandle,
+              avatarUrl: post.authorAvatarUrl,
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
                   radius: 12,
-                  backgroundImage: profileController.avatarProvider,
+                  backgroundImage: NetworkImage(post.authorAvatarUrl),
                   backgroundColor: const Color(0xFFEAEAEA),
-                  child: profileController.avatarProvider == null
-                      ? const Icon(
-                          Icons.person,
-                          size: 14,
-                          color: Colors.black54,
-                        )
-                      : null,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Row(
-                  children: [
-                    Obx(
-                      () => Text(
-                        profileController.displayName.value,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        post.authorName,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      post.timeAgo,
-                      style: const TextStyle(
-                        color: Color(0xFF9A9A9A),
-                        fontSize: 11,
+                      const SizedBox(width: 8),
+                      Text(
+                        post.timeAgo,
+                        style: const TextStyle(
+                          color: Color(0xFF9A9A9A),
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -729,14 +743,22 @@ class _GuideTabs extends StatelessWidget {
 }
 
 class _ChatPost {
+  final String? id; // backend post id
   final String message;
   final String timeAgo;
+  final String authorName;
+  final String authorHandle;
+  final String authorAvatarUrl;
   int likes;
   final List<String> replies;
 
   _ChatPost({
+    this.id,
     required this.message,
     required this.timeAgo,
+    required this.authorName,
+    required this.authorHandle,
+    required this.authorAvatarUrl,
     required this.likes,
     required this.replies,
   });

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
+import 'package:fitness_app/features/home/controllers/challenges_feed_controller.dart';
 import 'package:fitness_app/features/settings/services/fitness_level_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final HomeProfileController _profileController;
+  late final ChallengesFeedController _challengesController;
   final FitnessLevelService _fitnessLevelService = FitnessLevelService();
   String _fitnessLevel = 'Beginner';
   bool _loadingLevel = true;
@@ -24,6 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _profileController = Get.isRegistered<HomeProfileController>()
         ? Get.find<HomeProfileController>()
         : Get.put(HomeProfileController(), permanent: true);
+    _challengesController = Get.isRegistered<ChallengesFeedController>()
+        ? Get.find<ChallengesFeedController>()
+        : Get.put(ChallengesFeedController(), permanent: true);
     _loadFitnessLevel();
   }
 
@@ -63,9 +68,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               // CONTENT
-              SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
+              RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([
+                    _profileController.loadProfileFromApi(force: true),
+                    _challengesController.loadPublicChallenges(),
+                    _loadFitnessLevel(),
+                  ]);
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
@@ -209,39 +223,64 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 12),
 
-                          // SCROLLABLE CHALLENGES ONLY
-                          SizedBox(
-                            height: 200,
-                            child: ListView(
-                              children: const [
-                                _ChallengeItem(
-                                  title: "Push Up",
-                                  subtitle: "100 Push up a day",
-                                  duration: "5:00 min",
-                                  progress: 0.42,
-                                  imageUrl:
-                                      "https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg",
+                          // DYNAMIC CHALLENGES FROM CONTROLLER
+                          GetBuilder<ChallengesFeedController>(
+                            builder: (ctrl) {
+                              final all = [
+                                ...ctrl.myPosts,
+                                ...ctrl.publicPosts,
+                              ];
+                              // deduplicate by id
+                              final seen = <String>{};
+                              final challenges = all
+                                  .where((p) => seen.add(p.id))
+                                  .take(5)
+                                  .toList();
+
+                              if (challenges.isEmpty) {
+                                return const SizedBox(
+                                  height: 80,
+                                  child: Center(
+                                    child: Text(
+                                      'No challenges yet.\nAdd one from Challenges tab.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black45,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return SizedBox(
+                                height: (challenges.length * 88.0).clamp(0, 280),
+                                child: ListView.separated(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: challenges.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final post = challenges[index];
+                                    return GestureDetector(
+                                      onTap: () => Get.toNamed(
+                                        AppRoutes.challengePostDetail,
+                                        arguments: post.id,
+                                      ),
+                                      child: _ChallengeItem(
+                                        title: post.title,
+                                        subtitle: post.target,
+                                        duration: post.category,
+                                        progress: post.accepted ? 1.0 : 0.0,
+                                        imageUrl: post.imageUrl?.isNotEmpty == true
+                                            ? post.imageUrl!
+                                            : 'https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg',
+                                      ),
+                                    );
+                                  },
                                 ),
-                                SizedBox(height: 12),
-                                _ChallengeItem(
-                                  title: "Sit Up",
-                                  subtitle: "20 Sit up a day",
-                                  duration: "5:00 min",
-                                  progress: 0.78,
-                                  imageUrl:
-                                      "https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg",
-                                ),
-                                SizedBox(height: 12), //
-                                _ChallengeItem(
-                                  title: "Knee Push Up",
-                                  subtitle: "20 reps",
-                                  duration: "5:00 min",
-                                  progress: 0.35,
-                                  imageUrl:
-                                      "https://images.pexels.com/photos/414029/pexels-photo-414029.jpeg",
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 20),
@@ -315,6 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+            ),
             ],
           ),
         ),
@@ -323,12 +363,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 // CHALLENGE ITEM WIDGET
-
 class _ChallengeItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final String duration;
-  final double progress;
+  final double progress; // 0.0 to 1.0
   final String imageUrl;
 
   const _ChallengeItem({
@@ -341,50 +380,68 @@ class _ChallengeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            imageUrl,
-            width: 64,
-            height: 64,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+    final pct = progress.clamp(0.0, 1.0);
+    final progressLabel = pct == 0.0
+        ? 'Not started'
+        : pct >= 1.0
+            ? 'Completed'
+            : '${(pct * 100).toStringAsFixed(0)}%';
+
+    return GestureDetector(
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              imageUrl,
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 64, height: 64,
+                color: const Color(0xFFEEEEEE),
+                child: const Icon(Icons.fitness_center, color: Colors.black38),
               ),
-              const SizedBox(height: 8),
-              //   PROGRESS BAR
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFFEFEFEF),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF19C4C1),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: pct,
+                    minHeight: 6,
+                    backgroundColor: const Color(0xFFEFEFEF),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      pct >= 1.0 ? Colors.green : const Color(0xFF19C4C1),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(progressLabel,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: pct >= 1.0 ? Colors.green : Colors.black45,
+                    )),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          duration,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Text(duration,
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ],
+      ),
     );
   }
 }

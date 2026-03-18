@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fitness_app/features/home/widgets/user_profile_sheet.dart';
 
 class ExploreGroupChatPanel extends StatefulWidget {
   const ExploreGroupChatPanel({super.key});
@@ -373,9 +375,18 @@ class _MessageBubble extends StatelessWidget {
           : MainAxisAlignment.start,
       children: [
         if (!message.isMe)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _HeaderAvatar(url: message.senderAvatarUrl),
+          GestureDetector(
+            onTap: () => showUserProfileSheet(
+              context,
+              userId: 'chat_${message.senderName.toLowerCase().replaceAll(' ', '_')}',
+              name: message.senderName,
+              handle: '@${message.senderName.toLowerCase().replaceAll(' ', '_')}',
+              avatarUrl: message.senderAvatarUrl,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _HeaderAvatar(url: message.senderAvatarUrl),
+            ),
           ),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 250),
@@ -387,12 +398,21 @@ class _MessageBubble extends StatelessWidget {
               if (!message.isMe)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    message.senderName,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
+                  child: GestureDetector(
+                    onTap: () => showUserProfileSheet(
+                      context,
+                      userId: 'chat_${message.senderName.toLowerCase().replaceAll(' ', '_')}',
+                      name: message.senderName,
+                      handle: '@${message.senderName.toLowerCase().replaceAll(' ', '_')}',
+                      avatarUrl: message.senderAvatarUrl,
+                    ),
+                    child: Text(
+                      message.senderName,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
                     ),
                   ),
                 ),

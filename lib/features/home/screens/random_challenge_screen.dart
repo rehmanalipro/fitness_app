@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,9 @@ import 'package:get/get.dart';
 import 'package:camera/camera.dart';
 
 import 'package:fitness_app/layout/main_layout.dart';
+import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
+import 'package:fitness_app/features/home/controllers/challenges_feed_controller.dart';
+import 'package:fitness_app/features/home/services/app_api_service.dart';
 
 class RandomChallengeScreen extends StatefulWidget {
   const RandomChallengeScreen({super.key});
@@ -19,12 +23,59 @@ class _RandomChallengeScreenState extends State<RandomChallengeScreen> {
   final List<RandomChallenge> _queue = [];
   late RandomChallenge _currentChallenge;
   bool _isAdRunning = false;
+  bool _isLoadingFromBackend = false;
+
+  // Backend challenges converted to RandomChallenge
+  final List<RandomChallenge> _backendChallenges = [];
 
   @override
   void initState() {
     super.initState();
     _prepareQueue();
     _currentChallenge = _pickNextChallenge();
+    _loadBackendChallenges();
+  }
+
+  Future<void> _loadBackendChallenges() async {
+    setState(() => _isLoadingFromBackend = true);
+    try {
+      // Try to get challenges from ChallengesFeedController first
+      final feedCtrl = Get.isRegistered<ChallengesFeedController>()
+          ? Get.find<ChallengesFeedController>()
+          : Get.put(ChallengesFeedController(), permanent: true);
+
+      await feedCtrl.loadPublicChallenges();
+
+      final apiPosts = feedCtrl.publicPosts
+          .where((p) => p.id.startsWith('api_'))
+          .toList();
+
+      if (apiPosts.isNotEmpty) {
+        _backendChallenges.clear();
+        for (final p in apiPosts) {
+          _backendChallenges.add(RandomChallenge(
+            id: p.id,
+            name: p.title,
+            subtitle: p.target,
+            description: p.description,
+            duration: '${p.target} min',
+            progress: p.progress,
+            timeLimitMinutes: 5,
+            imageUrl: p.imageUrl?.isNotEmpty == true
+                ? p.imageUrl!
+                : 'https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=400',
+          ));
+        }
+        // Replace queue with backend challenges
+        _queue.clear();
+        _queue.addAll(_backendChallenges);
+        _queue.shuffle(_rng);
+        if (mounted) {
+          setState(() => _currentChallenge = _pickNextChallenge());
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoadingFromBackend = false);
   }
 
   void _prepareQueue() {
@@ -129,6 +180,11 @@ class _RandomChallengeScreenState extends State<RandomChallengeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
+                if (_isLoadingFromBackend)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: LinearProgressIndicator(color: Colors.black),
+                  ),
                 Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
@@ -566,6 +622,16 @@ class _ChallengeRecordingScreenState extends State<ChallengeRecordingScreen> {
       _recordingTimer?.cancel();
       if (!mounted) return;
       setState(() => _isRecording = false);
+
+      // Award points for completing challenge
+      try {
+        final profileCtrl = Get.find<HomeProfileController>();
+        profileCtrl.addPoints(10);
+      } catch (_) {}
+
+      // Upload recorded video to backend as accepted challenge
+      _uploadRecordedChallenge(file.path);
+
       final message =
           auto ? 'Challenge time completed' : 'Recording saved successfully';
       Get.snackbar('Challenge recorded', message);
@@ -574,6 +640,31 @@ class _ChallengeRecordingScreenState extends State<ChallengeRecordingScreen> {
       if (!mounted) return;
       setState(() => _isRecording = false);
       Get.snackbar('Recording failed', 'Unable to stop video capture');
+    }
+  }
+
+  Future<void> _uploadRecordedChallenge(String videoPath) async {
+    try {
+      final api = AppApiService();
+      // Accept the challenge on backend using its real id
+      await api.acceptChallenge(challengeId: widget.challenge.id);
+      // Upload the recorded video as a challenge post
+      await api.uploadChallengeWithMedia(
+        title: widget.challenge.name,
+        target: widget.challenge.subtitle,
+        category: 'Random',
+        fitnessLevel: 'All',
+        description: widget.challenge.description,
+        mediaFile: File(videoPath),
+        isVideo: true,
+      );
+      // Also update progress to 100%
+      final rawId = widget.challenge.id.replaceFirst(RegExp(r'^(api_|my_|public_)'), '');
+      if (rawId.isNotEmpty) {
+        await api.updateChallengeProgress(rawId, {'progress': 100, 'status': 'completed'});
+      }
+    } catch (_) {
+      // Silent fail — points already awarded locally
     }
   }
 

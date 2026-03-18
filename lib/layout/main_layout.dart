@@ -494,7 +494,11 @@ class _BottomNavBar extends StatelessWidget {
       return;
     }
 
-    if (route == AppRoutes.reelsHome) return;
+    if (route == AppRoutes.reelsHome) {
+      // already on reels, go to user video feed
+      Get.toNamed(AppRoutes.userVideoFeed);
+      return;
+    }
     Get.toNamed(AppRoutes.reelsHome);
   }
 }

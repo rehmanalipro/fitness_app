@@ -48,7 +48,8 @@ dependencies:
   language_picker: ^0.4.5
   adaptive_theme: ^3.7.2
   shared_preferences: ^2.5.3
-  
+  mobile_scanner: ^6.0.10
+
 
 dev_dependencies:
   flutter_test:

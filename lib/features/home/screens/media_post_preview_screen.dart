@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
+import 'package:fitness_app/features/home/controllers/user_video_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
@@ -156,6 +157,21 @@ class _MediaPostPreviewScreenState extends State<MediaPostPreviewScreen> {
     if (_isPosting) return;
     setState(() => _isPosting = true);
     final caption = _captionController.text.trim();
+
+    // Add to video feed if it's a video
+    if (widget.isVideo && widget.mediaPath != null) {
+      final videoCtrl = Get.isRegistered<UserVideoController>()
+          ? Get.find<UserVideoController>()
+          : Get.put(UserVideoController(), permanent: true);
+      videoCtrl.addVideo(
+        userName: _profileController.displayName.value,
+        userHandle: _profileController.userName.value,
+        videoPath: widget.mediaPath,
+        caption: caption,
+        isMine: true,
+      );
+    }
+
     final uploaded = await _profileController.createMediaPost(
       isVideo: widget.isVideo,
       mediaPath: widget.isVideo ? widget.mediaPath : widget.imagePath,

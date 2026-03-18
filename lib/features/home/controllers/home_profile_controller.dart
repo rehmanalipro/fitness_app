@@ -5,7 +5,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fitness_app/core/network/api_config.dart';
+import 'package:fitness_app/features/auth/services/auth_service.dart';
+import 'package:fitness_app/features/home/models/user_video_item.dart';
 import 'package:fitness_app/features/home/services/app_api_service.dart';
+import 'package:fitness_app/features/home/controllers/leaderboard_controller.dart';
 
 class UserMediaItem {
   final String id;
@@ -37,43 +40,51 @@ class UserMediaItem {
   });
 }
 
+// ── Follow/Follower User Model ────────────────────────────────────────────
+class SocialUser {
+  final String id;
+  final String name;
+  final String handle;
+  final String? avatarUrl;
+
+  SocialUser({
+    required this.id,
+    required this.name,
+    required this.handle,
+    this.avatarUrl,
+  });
+}
+
 class HomeProfileController extends GetxController {
   final AppApiService _apiService = AppApiService();
 
-  final RxString displayName = 'Mentisa Mayo'.obs;
-  final RxString userName = '@mentisa_fit'.obs;
-  final RxString bio = 'Tap edit profile to add your bio'.obs;
+  final RxString displayName = ''.obs;
+  final RxString userName = ''.obs;
+  final RxString bio = ''.obs;
   final Rxn<Uint8List> avatarBytes = Rxn<Uint8List>();
   final RxnString avatarUrl = RxnString();
-  final RxInt followingCount = 14.obs;
-  final RxInt followerCount = 38.obs;
+  final RxInt followingCount = 0.obs;
+  final RxInt followerCount = 0.obs;
+  final RxInt totalLikesCount = 0.obs;
+  final RxInt points = 0.obs;
   final RxBool isSyncing = false.obs;
   final RxnString syncError = RxnString();
   bool _profileLoadedOnce = false;
 
-  final RxList<UserMediaItem> mediaItems = <UserMediaItem>[
-    UserMediaItem(
-      id: 'm1',
-      imageUrl:
-          'https://images.pexels.com/photos/1544376/pexels-photo-1544376.jpeg',
-    ),
-    UserMediaItem(
-      id: 'm2',
-      imageUrl:
-          'https://images.pexels.com/photos/1884574/pexels-photo-1884574.jpeg',
-      isLiked: true,
-    ),
-    UserMediaItem(
-      id: 'm3',
-      imageUrl:
-          'https://images.pexels.com/photos/1552106/pexels-photo-1552106.jpeg',
-    ),
-    UserMediaItem(
-      id: 'm4',
-      imageUrl: 'https://images.pexels.com/photos/34950/pexels-photo.jpg',
-      isLiked: true,
-    ),
-  ].obs;
+  // TikTok-style social lists
+  final RxList<SocialUser> followingUsers = <SocialUser>[].obs;
+  final RxList<SocialUser> followerUsers = <SocialUser>[].obs;
+
+  // Liked videos from reel feed
+  final RxList<UserVideoItem> likedVideoItems = <UserVideoItem>[].obs;
+
+  final RxList<UserMediaItem> mediaItems = <UserMediaItem>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadProfileFromApi();
+  }
 
   void setDisplayName(String value) {
     final trimmed = value.trim();
@@ -164,14 +175,81 @@ class HomeProfileController extends GetxController {
   void toggleLike(String id) {
     final index = mediaItems.indexWhere((item) => item.id == id);
     if (index == -1) return;
-    mediaItems[index].isLiked = !mediaItems[index].isLiked;
+    final wasLiked = mediaItems[index].isLiked;
+    mediaItems[index].isLiked = !wasLiked;
+    totalLikesCount.value = likedVideoItems.length +
+        mediaItems.where((m) => m.isLiked).length;
     mediaItems.refresh();
   } //
 
   List<UserMediaItem> get likedMediaItems =>
       mediaItems.where((item) => item.isLiked).toList(growable: false);
 
-  int get likesCount => likedMediaItems.length;
+  int get likesCount => totalLikesCount.value;
+
+  /// Call on logout — clears all user data so next login starts fresh
+  void resetForLogout() {
+    displayName.value = '';
+    userName.value = '';
+    bio.value = '';
+    avatarBytes.value = null;
+    avatarUrl.value = null;
+    followingCount.value = 0;
+    followerCount.value = 0;
+    totalLikesCount.value = 0;
+    points.value = 0;
+    followingUsers.clear();
+    followerUsers.clear();
+    likedVideoItems.clear();
+    mediaItems.clear();
+    syncError.value = null;
+    _profileLoadedOnce = false;
+  }
+
+  void addPoints(int amount) {
+    points.value += amount;
+    try {
+      Get.find<LeaderboardController>().syncCurrentUserPoints(points: points.value);
+    } catch (_) {}
+  }
+
+  void incrementFollower() => followerCount.value++;
+  void decrementFollower() {
+    if (followerCount.value > 0) followerCount.value--;
+  }
+
+  // Called when user follows someone from reel feed
+  void addFollowing(SocialUser user) {
+    if (followingUsers.any((u) => u.id == user.id)) return;
+    followingUsers.add(user);
+    followingCount.value = followingUsers.length;
+  }
+
+  void removeFollowing(String userId) {
+    followingUsers.removeWhere((u) => u.id == userId);
+    followingCount.value = followingUsers.length;
+  }
+
+  // Called when someone follows you (simulated via Follow button on profile)
+  void addFollower(SocialUser user) {
+    if (followerUsers.any((u) => u.id == user.id)) return;
+    followerUsers.add(user);
+    followerCount.value = followerUsers.length;
+  }
+
+  // Called when user likes a video in reel feed
+  void addLikedVideo(UserVideoItem video) {
+    if (likedVideoItems.any((v) => v.id == video.id)) return;
+    likedVideoItems.insert(0, video);
+    totalLikesCount.value = likedVideoItems.length +
+        mediaItems.where((m) => m.isLiked).length;
+  }
+
+  void removeLikedVideo(String videoId) {
+    likedVideoItems.removeWhere((v) => v.id == videoId);
+    totalLikesCount.value = likedVideoItems.length +
+        mediaItems.where((m) => m.isLiked).length;
+  }
 
   ImageProvider? get avatarProvider {
     final remoteAvatar = avatarUrl.value;
@@ -180,7 +258,7 @@ class HomeProfileController extends GetxController {
     }
     final bytes = avatarBytes.value;
     if (bytes != null) return MemoryImage(bytes);
-    return const NetworkImage('https://i.pravatar.cc/150?img=47');
+    return null; // null = show person icon placeholder
   }
 
   Future<void> loadProfileFromApi({bool force = false}) async {
@@ -192,23 +270,16 @@ class HomeProfileController extends GetxController {
       final ok = result['ok'] == true;
       if (!ok) {
         syncError.value = 'Unable to load profile (${result['statusCode']})';
+        // Fallback: load name from local signup data
+        await _loadLocalFallback();
         return;
       }
       final payload = _extractPayload(result['data']);
       final remoteName = _pickString(payload, ['name', 'full_name']);
-      final remoteUsername = _pickString(payload, [
-        'username',
-        'user_name',
-        'handle',
-      ]);
+      final remoteUsername = _pickString(payload, ['username', 'user_name', 'handle']);
       final remoteBio = _pickString(payload, ['bio', 'about']);
       final remoteAvatar = _pickString(payload, [
-        'avatar_url',
-        'profile_image_url',
-        'image_url',
-        'avatar',
-        'image',
-        'photo_url',
+        'avatar_url', 'profile_image_url', 'image_url', 'avatar', 'image', 'photo_url',
       ]);
 
       if (remoteName != null && remoteName.trim().isNotEmpty) {
@@ -219,10 +290,7 @@ class HomeProfileController extends GetxController {
         userName.value = trimmed.startsWith('@') ? trimmed : '@$trimmed';
       }
       if (remoteBio != null) {
-        final trimmedBio = remoteBio.trim();
-        bio.value = trimmedBio.isEmpty
-            ? 'Tap edit profile to add your bio'
-            : trimmedBio;
+        bio.value = remoteBio.trim();
       }
       if (remoteAvatar != null && remoteAvatar.trim().isNotEmpty) {
         setAvatarUrl(remoteAvatar);
@@ -232,16 +300,44 @@ class HomeProfileController extends GetxController {
       _hydrateMediaFromPayload(payload);
       final mediaResult = await _apiService.getProfileMedia();
       if (mediaResult['ok'] == true) {
-        final mediaPayload = _extractPayload(mediaResult['data']);
-        _hydrateMediaFromPayload(mediaPayload);
+        _hydrateMediaFromPayload(_extractPayload(mediaResult['data']));
+      }
+
+      // Load social counts
+      final socialResult = await _apiService.getSocialDetail();
+      if (socialResult['ok'] == true) {
+        final sp = _extractPayload(socialResult['data']);
+        final fc = sp['followers_count'] ?? sp['followers'] ?? sp['follower_count'];
+        final fwc = sp['following_count'] ?? sp['following'];
+        final lc = sp['likes_count'] ?? sp['total_likes'] ?? sp['likes'];
+        if (fc is num) followerCount.value = fc.toInt();
+        if (fwc is num) followingCount.value = fwc.toInt();
+        if (lc is num) totalLikesCount.value = lc.toInt();
       }
 
       _profileLoadedOnce = true;
     } catch (_) {
       syncError.value = 'Unable to connect to server';
+      await _loadLocalFallback();
     } finally {
       isSyncing.value = false;
     }
+  }
+
+  /// Load name/email from local SharedPreferences as fallback when backend unreachable
+  Future<void> _loadLocalFallback() async {
+    try {
+      final AuthService authService = AuthService();
+      final email = await authService.getEmail();
+      // If name is still empty, derive from email
+      if (displayName.value.isEmpty && email != null && email.isNotEmpty) {
+        final namePart = email.split('@').first;
+        displayName.value = namePart;
+        if (userName.value.isEmpty) {
+          userName.value = '@$namePart';
+        }
+      }
+    } catch (_) {}
   }
 
   Future<bool> saveProfileToApi({

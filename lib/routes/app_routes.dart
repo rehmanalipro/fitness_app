@@ -38,6 +38,7 @@ import '../features/home/screens/notifications_screen.dart';
 import '../features/home/screens/profile_screen.dart';
 import '../features/home/screens/add_media_screen.dart';
 import '../features/home/screens/reels_home_screen.dart';
+import '../features/home/screens/user_video_feed_screen.dart';
 import '../features/home/screens/add_challenge_post_screen.dart';
 import '../features/home/screens/challenge_post_detail_screen.dart';
 
@@ -87,6 +88,7 @@ class AppRoutes {
   static const String inviteFriend = '/invite-friend';
   static const String profile = '/profile';
   static const String reelsHome = '/reels-home';
+  static const String userVideoFeed = '/user-video-feed';
 
   // GetX pages
   static final List<GetPage<dynamic>> pages = [
@@ -127,6 +129,7 @@ class AppRoutes {
     GetPage(name: inviteFriend, page: () => const InviteFriendScreen()),
     GetPage(name: profile, page: () => const ProfileScreen()),
     GetPage(name: reelsHome, page: () => const ReelsHomeScreen()),
+    GetPage(name: userVideoFeed, page: () => const UserVideoFeedScreen()),
     GetPage(name: settings, page: () => const SettingsScreen()),
     GetPage(name: profileSettings, page: () => const ProfileSettingScreen()),
     GetPage(name: subscription, page: () => const SubscriptionScreen()),

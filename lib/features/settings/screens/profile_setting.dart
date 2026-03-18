@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,11 +20,13 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
   late final TextEditingController _nameController;
+  late final TextEditingController _usernameController;
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
   bool _loadingAuth = true;
   bool _saving = false;
   bool _obscurePassword = true;
+  List<String> _usernameSuggestions = [];
 
   @override
   void initState() {
@@ -33,14 +37,36 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     _nameController = TextEditingController(
       text: _profileController.displayName.value,
     );
+    // Strip @ from username
+    final currentUsername = _profileController.userName.value;
+    _usernameController = TextEditingController(
+      text: currentUsername.startsWith('@') ? currentUsername.substring(1) : currentUsername,
+    );
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
     _loadAuthData();
+    _nameController.addListener(_generateUsernameSuggestions);
+  }
+
+  void _generateUsernameSuggestions() {
+    final name = _nameController.text.trim().toLowerCase().replaceAll(' ', '_');
+    if (name.isEmpty) { setState(() => _usernameSuggestions = []); return; }
+    final rng = Random();
+    setState(() {
+      _usernameSuggestions = [
+        name,
+        '${name}_fit',
+        '${name}_${rng.nextInt(999)}',
+        'fit_$name',
+        '${name}_official',
+      ].toSet().toList(); // unique
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -81,14 +107,30 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   Future<void> _saveProfile() async {
     if (_saving) return;
     setState(() => _saving = true);
-    _profileController.setDisplayName(_nameController.text);
+
+    final name = _nameController.text.trim();
+    final username = _usernameController.text.trim();
+
+    // Save to backend
+    final saved = await _profileController.saveProfileToApi(
+      name: name,
+      username: username,
+      userBio: _profileController.bio.value,
+    );
+
     await _authService.saveEmail(_emailController.text.trim());
     if (_passwordController.text.trim().isNotEmpty) {
       await _authService.savePassword(_passwordController.text);
     }
     if (!mounted) return;
     setState(() => _saving = false);
-    Get.back();
+    if (saved) {
+      Get.back();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_profileController.syncError.value ?? 'Save failed')),
+      );
+    }
   }
 
   @override
@@ -159,6 +201,41 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
+              const SizedBox(height: 14),
+              const Text(
+                'Username',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. john_fit',
+                  prefixText: '@',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (_usernameSuggestions.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Suggestions:', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: _usernameSuggestions.map((s) => GestureDetector(
+                    onTap: () => setState(() => _usernameController.text = s),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD0D0D0)),
+                      ),
+                      child: Text('@$s', style: const TextStyle(fontSize: 12)),
+                    ),
+                  )).toList(),
+                ),
+              ],
               const SizedBox(height: 14),
               const Text(
                 'Email',

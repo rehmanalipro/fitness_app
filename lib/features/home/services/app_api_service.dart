@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:fitness_app/core/network/api_config.dart';
 import 'package:fitness_app/features/auth/services/auth_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AppApiService {
@@ -15,26 +16,44 @@ class AppApiService {
 
   // ── Profile ──────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> getProfile() async {
-    return _get(ApiConfig.profileUrl);
+    final result = await _get(ApiConfig.getUserProfileUrl);
+    if (result['ok'] == true) return result;
+    return _get(ApiConfig.profileUrl); // fallback: GET /api/profile
   }
 
   Future<Map<String, dynamic>> updateProfile(
     Map<String, dynamic> fields,
   ) async {
-    return _post(ApiConfig.profileUrl, body: fields);
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.updateProfileUrl,   // POST /api/update_profile
+        ApiConfig.profileUrl,         // POST /api/profile
+      ],
+      body: fields,
+    );
   }
 
   Future<Map<String, dynamic>> uploadProfileImage(File imageFile) async {
     final token = await _authService.getToken();
-    final uri = Uri.parse(ApiConfig.profileImageUrl);
-    final request = http.MultipartRequest('POST', uri);
-    request.headers.addAll(_authHeaders(token));
-    request.files.add(
-      await http.MultipartFile.fromPath('image', imageFile.path),
-    );
-    final streamed = await request.send();
-    final response = await http.Response.fromStream(streamed);
-    return _toResult(response);
+    final endpoints = [
+      ApiConfig.profileImageUrl,      // POST /api/update_profile_img
+      ApiConfig.api('profile/image'), // fallback
+    ];
+    for (final url in endpoints) {
+      final uri = Uri.parse(url);
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(_authHeaders(token));
+      for (final field in ['image', 'media']) {
+        try { request.files.add(await http.MultipartFile.fromPath(field, imageFile.path)); } catch (_) {}
+      }
+      try {
+        final streamed = await request.send().timeout(_timeout);
+        final response = await http.Response.fromStream(streamed);
+        final result = _toResult(response);
+        if (result['ok'] == true) return result;
+      } catch (_) {}
+    }
+    return _timeoutResult();
   }
 
   // ── Media posts ──────────────────────────────────────────────────────────
@@ -146,6 +165,32 @@ class AppApiService {
   }
 
   // ── Challenges ───────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> getChallenges() async {
+    // Try GET first, then POST fallbacks
+    final getResult = await _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.challengesUrl,       // GET /api/challenges
+        ApiConfig.allChallengesUrl,    // GET /api/all_challenges
+        ApiConfig.api('challenges/public'),
+        ApiConfig.api('get_challenges'),
+        ApiConfig.api('public_challenges'),
+      ],
+      body: {},
+      useGet: true,
+    );
+    if (getResult['ok'] == true) return getResult;
+
+    // Fallback: try POST
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.challengesUrl,
+        ApiConfig.allChallengesUrl,
+        ApiConfig.api('get_challenges'),
+      ],
+      body: {'type': 'public'},
+    );
+  }
+
   Future<Map<String, dynamic>> getChallengeCategories() async {
     return _get(ApiConfig.challengeCategoriesUrl);
   }
@@ -153,7 +198,94 @@ class AppApiService {
   Future<Map<String, dynamic>> createChallenge(
     Map<String, dynamic> fields,
   ) async {
-    return _post(ApiConfig.challengesUrl, body: fields);
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.challengesUrl,
+        ApiConfig.createChallengeUrl,
+        ApiConfig.api('challenges/store'),
+      ],
+      body: fields,
+    );
+  }
+
+  Future<Map<String, dynamic>> uploadChallengeWithMedia({
+    required String title,
+    required String target,
+    required String category,
+    required String fitnessLevel,
+    required String description,
+    required File mediaFile,
+    required bool isVideo,
+  }) async {
+    final token = await _authService.getToken();
+    final endpoints = [
+      ApiConfig.challengesUrl,
+      ApiConfig.createChallengeUrl,
+      ApiConfig.api('challenges/store'),
+    ];
+    final tried = <Map<String, dynamic>>[];
+
+    for (final url in endpoints) {
+      final uri = Uri.parse(url);
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(_authHeaders(token));
+      request.fields['title'] = title;
+      request.fields['target'] = target;
+      request.fields['category'] = category;
+      request.fields['fitness_level'] = fitnessLevel;
+      request.fields['description'] = description;
+      request.fields['type'] = isVideo ? 'video' : 'image';
+      for (final field in [isVideo ? 'video' : 'image', 'media', 'file']) {
+        try {
+          request.files.add(await http.MultipartFile.fromPath(field, mediaFile.path));
+        } catch (_) {}
+      }
+      try {
+        final streamed = await request.send().timeout(_timeout);
+        final response = await http.Response.fromStream(streamed);
+        final result = _toResult(response);
+        if (result['ok'] == true) { result['endpoint'] = url; return result; }
+        tried.add({'endpoint': url, 'statusCode': result['statusCode']});
+      } catch (_) {
+        tried.add({'endpoint': url, 'statusCode': 0});
+      }
+    }
+    return {'ok': false, 'statusCode': 0, 'data': {'message': 'Upload failed', 'tried': tried}};
+  }
+
+  Future<Map<String, dynamic>> acceptChallenge({required String challengeId}) async {
+    // Strip local prefix — backend needs raw numeric/uuid id
+    final rawId = challengeId.replaceFirst(RegExp(r'^(api_|my_|public_)'), '');
+    if (rawId.isEmpty || rawId == challengeId && !challengeId.contains('_')) {
+      // rawId is already clean
+    }
+    if (kDebugMode) debugPrint('acceptChallenge rawId: $rawId (from: $challengeId)');
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.acceptChallengeUrl,              // POST /api/accept_challenge
+        ApiConfig.api('challenges/$rawId/accept'), // POST /api/challenges/{id}/accept
+        ApiConfig.challengeRecordUrl(rawId),       // POST /api/challenges/{id}/record
+        ApiConfig.api('accept_challenge'),         // alias
+      ],
+      body: {
+        'challenge_id': rawId,
+        'id': rawId,
+        'status': 'accepted',
+        'progress': 100,
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> likeChallenge({required String challengeId}) async {
+    final rawId = challengeId.replaceFirst(RegExp(r'^(api_|my_|public_)'), '');
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.likeChallengeUrl,                // POST /api/like_challenge
+        ApiConfig.api('challenges/$rawId/like'),   // fallback
+        ApiConfig.api('challenges/$rawId/reactions'),
+      ],
+      body: {'challenge_id': rawId, 'id': rawId, 'reaction': 'like'},
+    );
   }
 
   Future<Map<String, dynamic>> getCurrentChallenge() async {
@@ -178,7 +310,8 @@ class AppApiService {
   }
 
   Future<Map<String, dynamic>> deleteChallenge(String id) async {
-    return _delete(ApiConfig.currentChallengeByIdUrl(id));
+    final rawId = id.replaceFirst(RegExp(r'^(api_|my_|public_)'), '');
+    return _delete(ApiConfig.currentChallengeByIdUrl(rawId));
   }
 
   Future<Map<String, dynamic>> getChallengeLimits() async {
@@ -285,14 +418,23 @@ class AppApiService {
   }
 
   Future<Map<String, dynamic>> markNotificationAsRead(String id) async {
-    return _post(
-      ApiConfig.notificationActionUrl(id),
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.notificationReadUrl(id),   // POST /api/notifications/{id}/read
+        ApiConfig.notificationActionUrl(id), // fallback
+      ],
       body: <String, dynamic>{'action': 'read'},
     );
   }
 
   Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
-    return _post(ApiConfig.notificationsMarkAllReadUrl, body: {});
+    return _postToFirstAvailable(
+      endpoints: [
+        ApiConfig.notificationsMarkAllReadUrl,    // POST /api/notifications/read-all
+        ApiConfig.notificationsMarkAllReadAltUrl, // fallback
+      ],
+      body: {},
+    );
   }
 
   // ── Settings ─────────────────────────────────────────────────────────────
@@ -310,6 +452,91 @@ class AppApiService {
     Map<String, dynamic> fields,
   ) async {
     return _put(ApiConfig.settingsThemeUrl, body: fields);
+  }
+
+  // ── Shorts / Reels fetch ─────────────────────────────────────────────────
+  Future<Map<String, dynamic>> getShorts({Map<String, dynamic>? fields}) async {
+    return _post(ApiConfig.api('get_shorts'), body: fields ?? {});
+  }
+
+  // ── Comments ─────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> addComment({
+    required String challengeId,
+    required String description,
+  }) async {
+    final rawId = challengeId.replaceFirst(RegExp(r'^(api_|my_|public_)'), '');
+    return _post(ApiConfig.api('comment'), body: {
+      'challenge_id': rawId,
+      'description': description,
+      'message': description,
+    });
+  }
+
+  Future<Map<String, dynamic>> likeComment(String commentId) async {
+    return _post(ApiConfig.api('like_comment'), body: {'comment_id': commentId});
+  }
+
+  // ── Report ───────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> report({
+    required String targetId,
+    required String targetType, // 'challenge' | 'reel' | 'user'
+    String reason = '',
+  }) async {
+    return _post(ApiConfig.api('report'), body: {
+      'id': targetId,
+      'type': targetType,
+      'reason': reason,
+    });
+  }
+
+  // ── FCM Token ────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> updateFcmToken(String fcmToken) async {
+    return _post(ApiConfig.api('update_fcm'), body: {
+      'fcm_token': fcmToken,
+      'fcm': fcmToken,
+    });
+  }
+
+  // ── Social Detail (followers/following/likes counts) ─────────────────────
+  Future<Map<String, dynamic>> getSocialDetail({String? userId}) async {
+    return _post(ApiConfig.api('social_detail'), body: {
+      if (userId != null) 'user_id': userId,
+    });
+  }
+
+  // ── Recipes ──────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> addRecipe(Map<String, dynamic> fields) async {
+    return _post(ApiConfig.api('add_recipe'), body: fields);
+  }
+
+  Future<Map<String, dynamic>> getRecipes() async {
+    return _post(ApiConfig.api('get_recipes'), body: {});
+  }
+
+  // ── Food Logs ────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> createFoodLog(Map<String, dynamic> fields) async {
+    return _post(ApiConfig.createFoodLogUrl, body: fields);
+  }
+
+  Future<Map<String, dynamic>> getMyFoodLogs() async {
+    return _get(ApiConfig.myFoodLogsUrl);
+  }
+
+  Future<Map<String, dynamic>> deleteFoodLog(String foodLogId) async {
+    return _post(ApiConfig.deleteFoodLogUrl, body: {'food_log_id': foodLogId});
+  }
+
+  Future<Map<String, dynamic>> likeFoodLog(String foodLogId) async {
+    return _post(ApiConfig.likeFoodLogUrl, body: {'food_log_id': foodLogId});
+  }
+
+  // ── Leaderboard ──────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> getLeaderboard() async {
+    return _postToFirstAvailable(
+      endpoints: [ApiConfig.leaderboardUrl],
+      body: {},
+      useGet: true,
+    );
   }
 
   // ── Steps ────────────────────────────────────────────────────────────────
@@ -378,68 +605,110 @@ class AppApiService {
   }
 
   // ── Private HTTP helpers ──────────────────────────────────────────────────
+  static const Duration _timeout = Duration(seconds: 20);
+
   Future<Map<String, dynamic>> _get(String url) async {
-    final token = await _authService.getToken();
-    final response = await http.get(
-      Uri.parse(url),
-      headers: _jsonHeaders(token),
-    );
-    return _toResult(response);
+    try {
+      final token = await _authService.getToken();
+      final response = await http
+          .get(Uri.parse(url), headers: _jsonHeaders(token))
+          .timeout(_timeout);
+      return _toResult(response);
+    } catch (_) {
+      return _timeoutResult();
+    }
   }
 
   Future<Map<String, dynamic>> _post(
     String url, {
     required Map<String, dynamic> body,
   }) async {
-    final token = await _authService.getToken();
-    final response = await http.post(
-      Uri.parse(url),
-      headers: _jsonHeaders(token),
-      body: jsonEncode(body),
-    );
-    return _toResult(response);
+    try {
+      final token = await _authService.getToken();
+      if (kDebugMode) {
+        debugPrint('API POST → $url');
+        debugPrint('API BODY → ${jsonEncode(body)}');
+      }
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: _jsonHeaders(token),
+            body: jsonEncode(body),
+          )
+          .timeout(_timeout);
+      if (kDebugMode) {
+        debugPrint('API STATUS → ${response.statusCode}');
+        debugPrint('API RESPONSE → ${response.body}');
+      }
+      return _toResult(response);
+    } catch (e) {
+      if (kDebugMode) debugPrint('API POST ERROR → $e');
+      return _timeoutResult();
+    }
   }
 
   Future<Map<String, dynamic>> _put(
     String url, {
     required Map<String, dynamic> body,
   }) async {
-    final token = await _authService.getToken();
-    final response = await http.put(
-      Uri.parse(url),
-      headers: _jsonHeaders(token),
-      body: jsonEncode(body),
-    );
-    return _toResult(response);
+    try {
+      final token = await _authService.getToken();
+      final response = await http
+          .put(
+            Uri.parse(url),
+            headers: _jsonHeaders(token),
+            body: jsonEncode(body),
+          )
+          .timeout(_timeout);
+      return _toResult(response);
+    } catch (_) {
+      return _timeoutResult();
+    }
   }
 
   Future<Map<String, dynamic>> _delete(String url) async {
-    final token = await _authService.getToken();
-    final response = await http.delete(
-      Uri.parse(url),
-      headers: _jsonHeaders(token),
-    );
-    return _toResult(response);
+    try {
+      final token = await _authService.getToken();
+      final response = await http
+          .delete(Uri.parse(url), headers: _jsonHeaders(token))
+          .timeout(_timeout);
+      return _toResult(response);
+    } catch (_) {
+      return _timeoutResult();
+    }
   }
 
   Future<Map<String, dynamic>> _getWithQuery(
     String url,
     Map<String, String> query,
   ) async {
-    final token = await _authService.getToken();
-    final uri = Uri.parse(url).replace(queryParameters: query);
-    final response = await http.get(uri, headers: _jsonHeaders(token));
-    return _toResult(response);
+    try {
+      final token = await _authService.getToken();
+      final uri = Uri.parse(url).replace(queryParameters: query);
+      final response = await http
+          .get(uri, headers: _jsonHeaders(token))
+          .timeout(_timeout);
+      return _toResult(response);
+    } catch (_) {
+      return _timeoutResult();
+    }
   }
+
+  Map<String, dynamic> _timeoutResult() => <String, dynamic>{
+    'ok': false,
+    'statusCode': 0,
+    'data': <String, dynamic>{'message': 'Unable to connect to server'},
+  };
 
   Future<Map<String, dynamic>> _postToFirstAvailable({
     required List<String> endpoints,
     required Map<String, dynamic> body,
+    bool useGet = false,
   }) async {
     final tried = <Map<String, dynamic>>[];
 
     for (final url in endpoints) {
-      final result = await _post(url, body: body);
+      final result = useGet ? await _get(url) : await _post(url, body: body);
       if (result['ok'] == true) {
         result['endpoint'] = url;
         return result;

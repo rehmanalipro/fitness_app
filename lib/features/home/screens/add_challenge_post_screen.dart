@@ -1,10 +1,12 @@
+import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:fitness_app/features/home/controllers/challenges_feed_controller.dart';
-import 'package:fitness_app/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+
+import 'package:fitness_app/features/home/controllers/challenges_feed_controller.dart';
+import 'package:fitness_app/layout/main_layout.dart';
 
 class AddChallengePostScreen extends StatefulWidget {
   const AddChallengePostScreen({super.key});
@@ -14,89 +16,120 @@ class AddChallengePostScreen extends StatefulWidget {
 }
 
 class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
-  final _nameController = TextEditingController();
-  final _timeController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
+  final _nameCtrl = TextEditingController();
+  final _timeCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
 
-  String _category = 'Medium';
-  String _fitnessLevel = 'Beginner';
-  String? _selectedImageName;
-  Uint8List? _selectedImageBytes;
+  String? _selectedCategory;
+  String? _selectedFitnessLevel;
+
+  Uint8List? _imageBytes;
+  String? _videoPath;
+  bool _isVideo = false;
+  bool _isLoading = false;
+
+  final List<String> _categories = ['Strength', 'Cardio', 'Core', 'Flexibility', 'HIIT', 'Yoga'];
+  final List<String> _fitnessLevels = ['Beginner', 'Intermediate', 'Advanced'];
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _timeController.dispose();
-    _descriptionController.dispose();
+    _nameCtrl.dispose();
+    _timeCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
 
-  void _postChallenge() {
-    if (_nameController.text.trim().isEmpty ||
-        _timeController.text.trim().isEmpty ||
-        _descriptionController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Missing Fields',
-        'Please fill all required fields',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-
-    final controller = Get.find<ChallengesFeedController>();
-    controller.addMyPost(
-      title: _nameController.text.trim(),
-      target: _timeController.text.trim(),
-      category: _category,
-      fitnessLevel: _fitnessLevel,
-      description: _selectedImageName == null
-          ? _descriptionController.text.trim()
-          : '${_descriptionController.text.trim()}\nImage: $_selectedImageName',
-      imageBytes: _selectedImageBytes,
-    );
-    Get.back();
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    final file = await _imagePicker.pickImage(source: source, imageQuality: 85);
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
     setState(() {
-      _selectedImageName = file.name;
-      _selectedImageBytes = bytes;
+      _imageBytes = bytes;
+      _videoPath = null;
+      _isVideo = false;
     });
   }
 
-  Future<void> _openImagePickerSheet() async {
-    await showModalBottomSheet<void>(
+  Future<void> _pickVideo() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickVideo(source: ImageSource.gallery);
+    if (picked == null) return;
+    setState(() {
+      _videoPath = picked.path;
+      _imageBytes = null;
+      _isVideo = true;
+    });
+  }
+
+  void _showMediaPicker() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Camera'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Gallery'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: const Text('Upload Image'),
+              onTap: () { Get.back(); _pickImage(); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam),
+              title: const Text('Upload Video'),
+              onTap: () { Get.back(); _pickVideo(); },
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _submit() async {
+    final name = _nameCtrl.text.trim();
+    final time = _timeCtrl.text.trim();
+    final desc = _descCtrl.text.trim();
+
+    if (name.isEmpty) {
+      Get.snackbar('Error', 'Please enter challenge name', snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (_selectedCategory == null) {
+      Get.snackbar('Error', 'Please select a category', snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (_selectedFitnessLevel == null) {
+      Get.snackbar('Error', 'Please select fitness level', snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final controller = Get.isRegistered<ChallengesFeedController>()
+        ? Get.find<ChallengesFeedController>()
+        : Get.put(ChallengesFeedController(), permanent: true);
+
+    // await so we know if backend saved it
+    await controller.addMyPost(
+      title: name,
+      target: time.isNotEmpty ? time : name,
+      category: _selectedCategory!,
+      fitnessLevel: _selectedFitnessLevel!,
+      description: desc,
+      imageBytes: _imageBytes,
+      videoPath: _videoPath,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    Get.back(result: true);
+    Get.snackbar('Posted', 'Challenge posted successfully!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white);
   }
 
   @override
@@ -106,182 +139,207 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
       showAppBar: true,
       showBackButton: true,
       showBottomNav: false,
-      currentIndex: 2,
-      constrainBody: false,
-      body: Container(
-        color: const Color(0xFFF5F5F5),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 24),
-          child: Column(
-            children: [
-              _InputBox(
-                child: TextField(
-                  controller: _nameController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _fieldDecoration('Challenge Name'),
-                ),
-              ),
-              const SizedBox(height: 10),
-              _InputBox(
-                child: TextField(
-                  controller: _timeController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _fieldDecoration('Time'),
-                ),
-              ),
-              const SizedBox(height: 10),
-              _InputBox(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _category,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF9A9A9A),
-                  ),
-                  decoration: _fieldDecoration('Select Category'),
-                  items: const ['Easy', 'Medium', 'Hard']
-                      .map(
-                        (item) =>
-                            DropdownMenuItem(value: item, child: Text(item)),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _category = value;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 10),
-              _InputBox(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _fitnessLevel,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF9A9A9A),
-                  ),
-                  decoration: _fieldDecoration('Fitness Level'),
-                  items: const ['Beginner', 'Intermediate', 'Advanced']
-                      .map(
-                        (item) =>
-                            DropdownMenuItem(value: item, child: Text(item)),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _fitnessLevel = value;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 10),
-              _InputBox(
-                child: InkWell(
-                  onTap: _openImagePickerSheet,
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    height: 44,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _selectedImageName == null
-                              ? 'Upload Image'
-                              : _selectedImageName!,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF7C7C7C),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.file_upload_outlined,
-                          size: 16,
-                          color: Color(0xFF8B8B8B),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (_selectedImageBytes != null) ...[
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.memory(
-                    _selectedImageBytes!,
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 10),
-              _InputBox(
-                height: 98,
-                child: TextField(
-                  controller: _descriptionController,
-                  maxLines: 4,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _fieldDecoration('Discription'),
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Challenge Name
+            _buildTextField(_nameCtrl, 'Challenge Name'),
+            const SizedBox(height: 12),
+
+            // Time
+            _buildTextField(_timeCtrl, 'Time (e.g. 5:00 min)'),
+            const SizedBox(height: 12),
+
+            // Select Category
+            _buildDropdown(
+              hint: 'Select Category',
+              value: _selectedCategory,
+              items: _categories,
+              onChanged: (v) => setState(() => _selectedCategory = v),
+            ),
+            const SizedBox(height: 12),
+
+            // Fitness Level
+            _buildDropdown(
+              hint: 'Fitness Level',
+              value: _selectedFitnessLevel,
+              items: _fitnessLevels,
+              onChanged: (v) => setState(() => _selectedFitnessLevel = v),
+            ),
+            const SizedBox(height: 12),
+
+            // Upload Image / Video
+            GestureDetector(
+              onTap: _showMediaPicker,
+              child: Container(
                 width: double.infinity,
-                height: 42,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  onPressed: _postChallenge,
-                  child: const Text(
-                    'Post',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
-                  ),
+                height: _imageBytes != null || _videoPath != null ? null : 100,
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFD9D9D9)),
+                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFFFAFAFA),
                 ),
+                child: _buildMediaPreview(),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+
+            // Description
+            TextField(
+              controller: _descCtrl,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Description',
+                hintStyle: const TextStyle(color: Color(0xFFBBBBBB)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                ),
+                contentPadding: const EdgeInsets.all(14),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Post Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 22, height: 22,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('Post', style: TextStyle(color: Colors.white, fontSize: 16)),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  InputDecoration _fieldDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9C9C9C)),
-      border: InputBorder.none,
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+  Widget _buildTextField(TextEditingController ctrl, String hint) {
+    return TextField(
+      controller: ctrl,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFFBBBBBB)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      ),
     );
   }
-}
 
-class _InputBox extends StatelessWidget {
-  final Widget child;
-  final double height;
-
-  const _InputBox({required this.child, this.height = 44});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildDropdown({
+    required String hint,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
     return Container(
-      width: double.infinity,
-      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD6D6D6)),
+        border: Border.all(color: const Color(0xFFD9D9D9)),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: child,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          hint: Text(hint, style: const TextStyle(color: Color(0xFFBBBBBB))),
+          value: value,
+          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaPreview() {
+    if (_imageBytes != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          children: [
+            Image.memory(_imageBytes!, width: double.infinity, height: 180, fit: BoxFit.cover),
+            Positioned(
+              top: 8, right: 8,
+              child: GestureDetector(
+                onTap: () => setState(() => _imageBytes = null),
+                child: Container(
+                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                  padding: const EdgeInsets.all(4),
+                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_videoPath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          children: [
+            Container(
+              height: 180, color: Colors.black87,
+              child: const Center(child: Icon(Icons.play_circle_fill, color: Colors.white, size: 56)),
+            ),
+            Positioned(
+              top: 8, right: 8,
+              child: GestureDetector(
+                onTap: () => setState(() { _videoPath = null; _isVideo = false; }),
+                child: Container(
+                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                  padding: const EdgeInsets.all(4),
+                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 8, left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                child: Text(
+                  File(_videoPath!).path.split('/').last,
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(height: 20),
+        Icon(Icons.upload_file, size: 28, color: Color(0xFFBBBBBB)),
+        SizedBox(height: 6),
+        Text('Upload Image / Video', style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13)),
+        SizedBox(height: 20),
+      ],
     );
   }
 }

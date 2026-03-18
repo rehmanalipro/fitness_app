@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 
 import 'package:fitness_app/core/utils/app_responsive.dart';
+import 'package:fitness_app/features/home/widgets/user_profile_sheet.dart';
 import 'package:fitness_app/layout/main_layout.dart';
+
+const _kFriends = [
+  {'id': 'f1', 'name': 'Marsha Fisher',    'handle': '@marsha.fit',   'img': 'https://i.pravatar.cc/100?img=24'},
+  {'id': 'f2', 'name': 'Juanita Cormier',  'handle': '@juanita.c',    'img': 'https://i.pravatar.cc/100?img=26'},
+  {'id': 'f3', 'name': 'Tamara Schmidt',   'handle': '@tamara.s',     'img': 'https://i.pravatar.cc/100?img=52'},
+  {'id': 'f4', 'name': 'Ricardo Veum',     'handle': '@ricardo.v',    'img': 'https://i.pravatar.cc/100?img=15'},
+  {'id': 'f5', 'name': 'Gary Sanford',     'handle': '@gary.san',     'img': 'https://i.pravatar.cc/100?img=14'},
+  {'id': 'f6', 'name': 'Bryan Cole',       'handle': '@bryan.cole',   'img': 'https://i.pravatar.cc/100?img=12'},
+];
 
 class InviteFriendScreen extends StatelessWidget {
   const InviteFriendScreen({super.key});
@@ -56,10 +66,11 @@ class InviteFriendScreen extends StatelessWidget {
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: 6,
+                    itemCount: _kFriends.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 10),
                     itemBuilder: (context, index) {
+                      final friend = _kFriends[index];
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -78,26 +89,44 @@ class InviteFriendScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 35,
-                              height: 35,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
+                            GestureDetector(
+                              onTap: () => showUserProfileSheet(
+                                context,
+                                userId: friend['id']!,
+                                name: friend['name']!,
+                                handle: friend['handle']!,
+                                avatarUrl: friend['img'],
                               ),
-                              child: ClipOval(
-                                child: Image.network(
-                                  'https://i.pravatar.cc/100?img=32',
-                                  fit: BoxFit.cover,
+                              child: Container(
+                                width: 35,
+                                height: 35,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                ),
+                                child: ClipOval(
+                                  child: Image.network(
+                                    friend['img']!,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'Marsha Fisher',
-                                style: TextStyle(
-                                  fontSize: 27 / 2,
-                                  fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => showUserProfileSheet(
+                                  context,
+                                  userId: friend['id']!,
+                                  name: friend['name']!,
+                                  handle: friend['handle']!,
+                                  avatarUrl: friend['img'],
+                                ),
+                                child: Text(
+                                  friend['name']!,
+                                  style: const TextStyle(
+                                    fontSize: 27 / 2,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),

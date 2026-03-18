@@ -5,6 +5,9 @@ import 'package:get/get.dart';
 
 import 'package:fitness_app/features/home/models/reel_item.dart';
 import 'package:fitness_app/features/home/screens/reels_watch_screen.dart';
+import 'package:fitness_app/features/home/screens/user_video_feed_screen.dart';
+import 'package:fitness_app/features/home/controllers/user_video_controller.dart';
+import 'package:fitness_app/features/home/widgets/user_profile_sheet.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 
 class ReelsHomeScreen extends StatelessWidget {
@@ -296,38 +299,56 @@ class _ReelCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 15,
-                  backgroundImage: NetworkImage(item.profileImage),
+                GestureDetector(
+                  onTap: () => showUserProfileSheet(
+                    context,
+                    userId: item.userId,
+                    name: item.userName,
+                    handle: item.userHandle,
+                    avatarUrl: item.profileImage,
+                  ),
+                  child: CircleAvatar(
+                    radius: 15,
+                    backgroundImage: NetworkImage(item.profileImage),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.userName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                  child: GestureDetector(
+                    onTap: () => showUserProfileSheet(
+                      context,
+                      userId: item.userId,
+                      name: item.userName,
+                      handle: item.userHandle,
+                      avatarUrl: item.profileImage,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.userName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.ageText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFE0E0E0),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 2),
+                        Text(
+                          item.ageText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFE0E0E0),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],

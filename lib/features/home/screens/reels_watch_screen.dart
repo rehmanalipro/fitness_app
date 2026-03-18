@@ -414,6 +414,7 @@ class _ReelsWatchScreenState extends State<ReelsWatchScreen> {
         _pendingActions.add(key);
       } else {
         _pendingActions.remove(key);
+        
       }
     });
   }
@@ -433,7 +434,7 @@ class _ReelsWatchScreenState extends State<ReelsWatchScreen> {
       final shortened = (value / 1000).toStringAsFixed(
         value % 1000 == 0 ? 0 : 1,
       );
-      return '${shortened}K';
+      return '${shortened}K';   
     }
     return '$value';
   }

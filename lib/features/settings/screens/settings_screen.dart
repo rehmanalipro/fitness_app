@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:fitness_app/features/auth/services/auth_service.dart';
+import 'package:fitness_app/features/home/controllers/home_profile_controller.dart';
 import 'package:fitness_app/layout/main_layout.dart';
 import 'package:fitness_app/routes/app_routes.dart';
 
@@ -37,6 +38,10 @@ class SettingsScreen extends StatelessWidget {
 
     if (shouldLogout == true) {
       await _authService.logout();
+      // Reset profile controller so next user gets fresh data
+      if (Get.isRegistered<HomeProfileController>()) {
+        Get.find<HomeProfileController>().resetForLogout();
+      }
       Get.offAllNamed(AppRoutes.login);
     }
   }
