@@ -10,7 +10,7 @@ class FoodLogTabSwitcher extends StatelessWidget {
     required this.isPublicSelected,
     required this.onPublicTap,
     required this.onMyPostTap,
-  });
+  }); //
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class FoodLogTabSwitcher extends StatelessWidget {
         boxShadow: const [
           BoxShadow(
             color: Color(0x12000000),
-            blurRadius: 6,
+            blurRadius: 6, // soften the asdfg hjklp
             offset: Offset(0, 2),
           ),
         ],

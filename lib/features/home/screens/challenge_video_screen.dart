@@ -267,7 +267,7 @@ class _ChallengeVideoScreenState extends State<ChallengeVideoScreen> {
                   ),
                 ),
               ),
-            ),
+            ),////    
 
             // ── Play/Pause center ──────────────────────────────────────
             if (_initialized && !_vpc!.value.isPlaying)

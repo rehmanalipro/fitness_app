@@ -28,7 +28,14 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
   bool _isVideo = false;
   bool _isLoading = false;
 
-  final List<String> _categories = ['Strength', 'Cardio', 'Core', 'Flexibility', 'HIIT', 'Yoga'];
+  final List<String> _categories = [
+    'Strength',
+    'Cardio',
+    'Core',
+    'Flexibility',
+    'HIIT',
+    'Yoga',
+  ];
   final List<String> _fitnessLevels = ['Beginner', 'Intermediate', 'Advanced'];
 
   @override
@@ -41,7 +48,10 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
     setState(() {
@@ -75,12 +85,18 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
             ListTile(
               leading: const Icon(Icons.image),
               title: const Text('Upload Image'),
-              onTap: () { Get.back(); _pickImage(); },
+              onTap: () {
+                Get.back();
+                _pickImage();
+              },
             ),
             ListTile(
               leading: const Icon(Icons.videocam),
               title: const Text('Upload Video'),
-              onTap: () { Get.back(); _pickVideo(); },
+              onTap: () {
+                Get.back();
+                _pickVideo();
+              },
             ),
           ],
         ),
@@ -94,15 +110,27 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
     final desc = _descCtrl.text.trim();
 
     if (name.isEmpty) {
-      Get.snackbar('Error', 'Please enter challenge name', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Please enter challenge name',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
     if (_selectedCategory == null) {
-      Get.snackbar('Error', 'Please select a category', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Please select a category',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
     if (_selectedFitnessLevel == null) {
-      Get.snackbar('Error', 'Please select fitness level', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Please select fitness level',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
@@ -126,10 +154,13 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
     if (!mounted) return;
     setState(() => _isLoading = false);
     Get.back(result: true);
-    Get.snackbar('Posted', 'Challenge posted successfully!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.black87,
-        colorText: Colors.white);
+    Get.snackbar(
+      'Posted',
+      'Challenge posted successfully!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.black87,
+      colorText: Colors.white,
+    );
   }
 
   @override
@@ -214,14 +245,23 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
                 onPressed: _isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        width: 22, height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Text('Post', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    : const Text(
+                        'Post',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -244,7 +284,10 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -266,7 +309,9 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
           isExpanded: true,
           hint: Text(hint, style: const TextStyle(color: Color(0xFFBBBBBB))),
           value: value,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
@@ -279,13 +324,22 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
         borderRadius: BorderRadius.circular(10),
         child: Stack(
           children: [
-            Image.memory(_imageBytes!, width: double.infinity, height: 180, fit: BoxFit.cover),
+            Image.memory(
+              _imageBytes!,
+              width: double.infinity,
+              height: 180,
+              fit: BoxFit.cover,
+            ),
             Positioned(
-              top: 8, right: 8,
+              top: 8,
+              right: 8,
               child: GestureDetector(
                 onTap: () => setState(() => _imageBytes = null),
                 child: Container(
-                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
                   padding: const EdgeInsets.all(4),
                   child: const Icon(Icons.close, color: Colors.white, size: 16),
                 ),
@@ -301,29 +355,48 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
         child: Stack(
           children: [
             Container(
-              height: 180, color: Colors.black87,
-              child: const Center(child: Icon(Icons.play_circle_fill, color: Colors.white, size: 56)),
+              height: 180,
+              color: Colors.black87,
+              child: const Center(
+                child: Icon(
+                  Icons.play_circle_fill,
+                  color: Colors.white,
+                  size: 56,
+                ),
+              ),
             ),
             Positioned(
-              top: 8, right: 8,
+              top: 8,
+              right: 8,
               child: GestureDetector(
-                onTap: () => setState(() { _videoPath = null; _isVideo = false; }),
+                onTap: () => setState(() {
+                  _videoPath = null;
+                  _isVideo = false;
+                }),
                 child: Container(
-                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
                   padding: const EdgeInsets.all(4),
                   child: const Icon(Icons.close, color: Colors.white, size: 16),
                 ),
               ),
             ),
             Positioned(
-              bottom: 8, left: 8,
+              bottom: 8,
+              left: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 child: Text(
                   File(_videoPath!).path.split('/').last,
                   style: const TextStyle(color: Colors.white, fontSize: 11),
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -337,7 +410,10 @@ class _AddChallengePostScreenState extends State<AddChallengePostScreen> {
         SizedBox(height: 20),
         Icon(Icons.upload_file, size: 28, color: Color(0xFFBBBBBB)),
         SizedBox(height: 6),
-        Text('Upload Image / Video', style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13)),
+        Text(
+          'Upload Image / Video',
+          style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
+        ),
         SizedBox(height: 20),
       ],
     );
